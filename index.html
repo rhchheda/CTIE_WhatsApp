@@ -174,27 +174,41 @@
   // 🔑 CHANGE THIS TO YOUR DEPLOYED GAS WEB APP URL
   const GAS_API_URL = "https://script.google.com/macros/s/AKfycbwDT94idM6-N45HsmRafw_4Mg6_KLG9DBRTnPdcNCTNxfSBvXrT8ocOefpRzLIX0Kk6Ew/exec";
 
-  async function apiRequest(payload) {
-    const response = await fetch(GAS_API_URL, {
-      method: 'POST',
-      mode: 'cors',
-      redirect: 'follow',
-      body: JSON.stringify(payload)
+  function apiRequest(payload) {
+    return new Promise(function(resolve, reject) {
+      var callbackName = 'gasCallback_' + Date.now() + '_' + Math.floor(Math.random() * 100000);
+      var script = document.createElement('script');
+      var timeoutId = window.setTimeout(function() {
+        cleanup();
+        reject(new Error('Server did not respond. Redeploy the Apps Script web app and allow access to Anyone.'));
+      }, 20000);
+
+      function cleanup() {
+        window.clearTimeout(timeoutId);
+        if (script.parentNode) script.parentNode.removeChild(script);
+        try { delete window[callbackName]; } catch (err) { window[callbackName] = undefined; }
+      }
+
+      window[callbackName] = function(result) {
+        cleanup();
+        if (result && result.error) {
+          reject(new Error(result.message || result.error || 'Server error'));
+          return;
+        }
+        resolve(result);
+      };
+
+      script.onerror = function() {
+        cleanup();
+        reject(new Error('Could not reach the Apps Script URL. Check the deployment URL and access permissions.'));
+      };
+
+      script.src = GAS_API_URL
+        + '?callback=' + encodeURIComponent(callbackName)
+        + '&payload=' + encodeURIComponent(JSON.stringify(payload))
+        + '&t=' + Date.now();
+      document.head.appendChild(script);
     });
-
-    const text = await response.text();
-    let result;
-    try {
-      result = JSON.parse(text);
-    } catch (err) {
-      throw new Error('Server returned a non-JSON response. Check the Apps Script deployment permissions.');
-    }
-
-    if (!response.ok || result.error) {
-      throw new Error(result.message || result.error || 'Server error');
-    }
-
-    return result;
   }
 
   // --- PASSWORD VERIFICATION (calls server via fetch) ---
