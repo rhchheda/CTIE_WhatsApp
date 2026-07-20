@@ -174,6 +174,29 @@
   // 🔑 CHANGE THIS TO YOUR DEPLOYED GAS WEB APP URL
   const GAS_API_URL = "https://script.google.com/macros/s/AKfycbwDT94idM6-N45HsmRafw_4Mg6_KLG9DBRTnPdcNCTNxfSBvXrT8ocOefpRzLIX0Kk6Ew/exec";
 
+  async function apiRequest(payload) {
+    const response = await fetch(GAS_API_URL, {
+      method: 'POST',
+      mode: 'cors',
+      redirect: 'follow',
+      body: JSON.stringify(payload)
+    });
+
+    const text = await response.text();
+    let result;
+    try {
+      result = JSON.parse(text);
+    } catch (err) {
+      throw new Error('Server returned a non-JSON response. Check the Apps Script deployment permissions.');
+    }
+
+    if (!response.ok || result.error) {
+      throw new Error(result.message || result.error || 'Server error');
+    }
+
+    return result;
+  }
+
   // --- PASSWORD VERIFICATION (calls server via fetch) ---
   async function verifyPassword() {
     var input = document.getElementById('passwordInput').value;
@@ -191,13 +214,7 @@
     error.style.display = 'none';
 
     try {
-      const response = await fetch(GAS_API_URL, {
-        method: 'POST',
-        mode: 'cors',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'login', password: input })
-      });
-      const result = await response.json();
+      const result = await apiRequest({ action: 'login', password: input });
 
       btn.disabled = false;
       btn.innerText = 'Unlock Dashboard';
@@ -219,7 +236,7 @@
     } catch (err) {
       btn.disabled = false;
       btn.innerText = 'Unlock Dashboard';
-      error.innerText = '❌ Server error. Please try again.';
+      error.innerText = '❌ ' + (err.message || 'Server error. Please try again.');
       error.style.display = 'block';
       console.error(err);
     }
@@ -244,21 +261,20 @@
   // --- LOAD DASHBOARD DATA (via fetch) ---
   async function loadDashboard() {
     try {
-      const response = await fetch(GAS_API_URL, {
-        method: 'POST',
-        mode: 'cors',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'getData' })
-      });
-      const data = await response.json();
+      const data = await apiRequest({ action: 'getData' });
       renderDashboard(data);
     } catch (err) {
       document.getElementById('kpiAttPct').innerText = 'Error';
+      document.getElementById('alertsContainer').innerHTML = '<p style="color:#dc2626; padding:10px 0;">' + (err.message || 'Could not load dashboard data.') + '</p>';
       console.error(err);
     }
   }
 
   function renderDashboard(data) {
+    if (!data || !data.attendance || !data.inc) {
+      throw new Error('Dashboard data is incomplete. Check the Apps Script logs and sheet names.');
+    }
+
     // KPIs
     document.getElementById('kpiAttPct').innerText = data.attendance.avgPct + '%';
     document.getElementById('kpiKeyTotal').innerText = data.keyTotal;
