@@ -31,10 +31,10 @@
   .sticky-footer .ts { color: rgba(255,255,255,0.3); font-size: 10px; font-family: 'JetBrains Mono', monospace; }
 
   /* ── PASSWORD OVERLAY ── */
-  #password-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(10,20,40,0.92);
-    display:flex; justify-content:center; align-items:center; z-index:9999; backdrop-filter: blur(6px); transition: opacity 0.6s ease; }
+  #password-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background: var(--navy); overflow: hidden;
+    display:flex; justify-content:center; align-items:center; z-index:9999; transition: opacity 0.6s ease; }
   #password-overlay.hidden { opacity: 0; pointer-events: none; }
-  .login-box { background:#fff; padding:40px 35px; border-radius:24px; box-shadow:0 25px 50px -12px rgba(0,0,0,0.5);
+  .login-box { position: relative; z-index: 1; background:#fff; padding:40px 35px; border-radius:24px; box-shadow:0 25px 50px -12px rgba(0,0,0,0.6);
     text-align:center; max-width:400px; width:90%; }
   .login-box h1 { font-size:24px; color:#0b2b4a; margin-bottom:8px; }
   .login-box h1 span { color: var(--gold); font-style: italic; }
@@ -47,6 +47,23 @@
   .login-box button:hover:not(:disabled) { background: var(--gold); color: var(--navy); }
   .login-box button:disabled { opacity:0.7; cursor:not-allowed; }
   .login-error { color: var(--red); font-size:13px; margin-top:10px; display:none; }
+
+  /* ── CAROUSEL ── */
+  .login-stack { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; max-width: 420px; width: 90%; margin: 0 auto; }
+  .carousel-wrap { position: relative; width: 100%; border-radius: 20px; overflow: hidden; margin-bottom: 18px;
+    box-shadow: 0 20px 45px -12px rgba(0,0,0,0.5); aspect-ratio: 16/9; background: var(--navy); }
+  .carousel-wrap.wide { aspect-ratio: 16/4.2; margin: 1.4rem 0 2.2rem; box-shadow: var(--shadow); }
+  /* Login variant: full-bleed background behind the login card, not a boxed banner */
+  .carousel-wrap.fullscreen { position: absolute; inset: 0; z-index: 0; border-radius: 0; margin: 0; box-shadow: none; aspect-ratio: auto; }
+  .carousel-wrap.fullscreen::after { content: ''; position: absolute; inset: 0;
+    background: radial-gradient(ellipse at center, rgba(10,20,40,0.45) 0%, rgba(10,20,40,0.75) 100%); }
+  .carousel-wrap.fullscreen .carousel-dots { bottom: 34px; }
+  .carousel-slide { position: absolute; inset: 0; opacity: 0; transition: opacity 1s ease; }
+  .carousel-slide.active { opacity: 1; }
+  .carousel-slide svg { width: 100%; height: 100%; display: block; }
+  .carousel-dots { position: absolute; bottom: 12px; left: 0; right: 0; display: flex; justify-content: center; gap: 7px; z-index: 2; }
+  .carousel-dot { width: 7px; height: 7px; border-radius: 50%; background: rgba(255,255,255,0.35); border: none; cursor: pointer; padding: 0; transition: 0.25s; }
+  .carousel-dot.active { background: var(--gold); width: 20px; border-radius: 4px; }
 
   /* ── LOADING ── */
   .loading-screen { position: fixed; inset:0; background: var(--navy); display:flex; flex-direction:column;
@@ -205,12 +222,15 @@
 
 <!-- PASSWORD OVERLAY -->
 <div id="password-overlay">
-  <div class="login-box">
-    <h1>🔐 KLE‑CTIE <span>Unified</span></h1>
-    <p>Incubation Centre Dashboard · Enter access code</p>
-    <input type="password" id="passwordInput" placeholder="Enter password" autofocus />
-    <button onclick="verifyPassword()">Unlock Dashboard</button>
-    <div id="loginError" class="login-error">❌ Incorrect password. Try again.</div>
+  <div class="carousel-wrap fullscreen" id="loginCarousel"></div>
+  <div class="login-stack">
+    <div class="login-box">
+      <h1>🔐 KLE‑CTIE <span>Unified</span></h1>
+      <p>Incubation Centre Dashboard · Enter access code</p>
+      <input type="password" id="passwordInput" placeholder="Enter password" autofocus />
+      <button onclick="verifyPassword()">Unlock Dashboard</button>
+      <div id="loginError" class="login-error">❌ Incorrect password. Try again.</div>
+    </div>
   </div>
 </div>
 
@@ -249,6 +269,9 @@
   </div>
 
   <div class="container">
+
+    <!-- CAROUSEL -->
+    <div class="carousel-wrap wide" id="dashboardCarousel"></div>
 
     <!-- OVERVIEW KPI GRID -->
     <div class="kpi-grid" id="overviewKpiGrid"></div>
@@ -729,10 +752,130 @@ function palette(n) {
 }
 
 // ══════════════════════════════════════════════════════
+//  CAROUSEL — 3 self-contained, brand-colored illustrations (no external image
+//  files, so nothing to break/host). Same markup renders into both the login
+//  screen and the dashboard; each gets its own independent autoplay timer.
+// ══════════════════════════════════════════════════════
+const CAROUSEL_SLIDES = [
+  // 1. Innovation
+  `<svg viewBox="0 0 1200 400" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="bg1" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stop-color="#0d1b3e"/><stop offset="100%" stop-color="#1a2f5e"/>
+      </linearGradient>
+      <radialGradient id="glow1" cx="50%" cy="50%" r="50%">
+        <stop offset="0%" stop-color="#e8c97a" stop-opacity="0.4"/><stop offset="100%" stop-color="#e8c97a" stop-opacity="0"/>
+      </radialGradient>
+    </defs>
+    <rect width="1200" height="400" fill="url(#bg1)"/>
+    <g opacity="0.15">${dotGrid(0,0,1200,400,40)}</g>
+    <circle cx="900" cy="190" r="190" fill="url(#glow1)"/>
+    <g transform="translate(790,70)" stroke="#c9a84c" stroke-width="3" fill="none" stroke-linecap="round">
+      <circle cx="110" cy="110" r="72"/>
+      <path d="M85 178 L85 210 M135 178 L135 210 M95 222 L125 222"/>
+      <path d="M55 45 L15 15 M165 45 L205 15 M40 110 L0 110 M180 110 L220 110" opacity="0.85"/>
+      <circle cx="15" cy="15" r="5" fill="#e8c97a" stroke="none"/>
+      <circle cx="205" cy="15" r="5" fill="#e8c97a" stroke="none"/>
+      <circle cx="0" cy="110" r="5" fill="#e8c97a" stroke="none"/>
+      <circle cx="220" cy="110" r="5" fill="#e8c97a" stroke="none"/>
+    </g>
+    <text x="70" y="185" font-family="'Cormorant Garamond',serif" font-size="46" font-style="italic" fill="#ffffff">Innovation</text>
+    <text x="70" y="220" font-family="'Outfit',sans-serif" font-size="16" fill="rgba(255,255,255,0.55)">Ideas surfaced from every conversation, automatically</text>
+    <rect x="70" y="245" width="46" height="3" rx="1.5" fill="#c9a84c"/>
+  </svg>`,
+  // 2. Incubation & Growth
+  `<svg viewBox="0 0 1200 400" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="bg2" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stop-color="#0d1b3e"/><stop offset="100%" stop-color="#132a52"/>
+      </linearGradient>
+      <linearGradient id="bars2" x1="0" y1="1" x2="0" y2="0">
+        <stop offset="0%" stop-color="#1b7a3e"/><stop offset="100%" stop-color="#6ee7a0"/>
+      </linearGradient>
+      <radialGradient id="glow2" cx="50%" cy="50%" r="50%">
+        <stop offset="0%" stop-color="#6ee7a0" stop-opacity="0.3"/><stop offset="100%" stop-color="#6ee7a0" stop-opacity="0"/>
+      </radialGradient>
+    </defs>
+    <rect width="1200" height="400" fill="url(#bg2)"/>
+    <g opacity="0.15">${dotGrid(0,0,1200,400,40)}</g>
+    <circle cx="900" cy="220" r="190" fill="url(#glow2)"/>
+    <g transform="translate(770,150)">
+      <rect x="0" y="120" width="34" height="80" rx="4" fill="url(#bars2)" opacity="0.55"/>
+      <rect x="46" y="80" width="34" height="120" rx="4" fill="url(#bars2)" opacity="0.75"/>
+      <rect x="92" y="40" width="34" height="160" rx="4" fill="url(#bars2)"/>
+      <path d="M138 60 L190 10 L180 40 L215 30 L165 90 L155 60 Z" fill="#e8c97a"/>
+    </g>
+    <text x="70" y="185" font-family="'Cormorant Garamond',serif" font-size="46" font-style="italic" fill="#ffffff">Incubation</text>
+    <text x="70" y="220" font-family="'Outfit',sans-serif" font-size="16" fill="rgba(255,255,255,0.55)">From first pitch to scale-up, tracked in one place</text>
+    <rect x="70" y="245" width="46" height="3" rx="1.5" fill="#c9a84c"/>
+  </svg>`,
+  // 3. Community & Collaboration
+  `<svg viewBox="0 0 1200 400" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="bg3" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stop-color="#0d1b3e"/><stop offset="100%" stop-color="#241a4e"/>
+      </linearGradient>
+      <radialGradient id="glow3" cx="50%" cy="50%" r="50%">
+        <stop offset="0%" stop-color="#6c3483" stop-opacity="0.45"/><stop offset="100%" stop-color="#6c3483" stop-opacity="0"/>
+      </radialGradient>
+    </defs>
+    <rect width="1200" height="400" fill="url(#bg3)"/>
+    <g opacity="0.15">${dotGrid(0,0,1200,400,40)}</g>
+    <circle cx="900" cy="200" r="190" fill="url(#glow3)"/>
+    <g stroke="#a97fc9" stroke-width="1.5" opacity="0.8">
+      <line x1="800" y1="120" x2="900" y2="80"/><line x1="900" y1="80" x2="1010" y2="140"/>
+      <line x1="800" y1="120" x2="850" y2="230"/><line x1="900" y1="80" x2="850" y2="230"/>
+      <line x1="850" y1="230" x2="990" y2="260"/><line x1="1010" y1="140" x2="990" y2="260"/>
+      <line x1="800" y1="120" x2="700" y2="200"/><line x1="850" y1="230" x2="700" y2="200"/>
+    </g>
+    <g fill="#e8c97a"><circle cx="800" cy="120" r="7"/><circle cx="900" cy="80" r="7"/><circle cx="1010" cy="140" r="7"/>
+      <circle cx="850" cy="230" r="9"/><circle cx="990" cy="260" r="7"/><circle cx="700" cy="200" r="7"/></g>
+    <text x="70" y="185" font-family="'Cormorant Garamond',serif" font-size="46" font-style="italic" fill="#ffffff">Community</text>
+    <text x="70" y="220" font-family="'Outfit',sans-serif" font-size="16" fill="rgba(255,255,255,0.55)">Three WhatsApp groups, one connected campus</text>
+    <rect x="70" y="245" width="46" height="3" rx="1.5" fill="#c9a84c"/>
+  </svg>`
+];
+
+function dotGrid(x0, y0, w, h, gap) {
+  var out = '';
+  for (var y = y0; y < y0 + h; y += gap) {
+    for (var x = x0; x < x0 + w; x += gap) out += `<circle cx="${x}" cy="${y}" r="1.3" fill="#e8c97a"/>`;
+  }
+  return out;
+}
+
+function renderCarousel(containerId) {
+  var el = document.getElementById(containerId);
+  if (!el) return;
+  el.innerHTML = CAROUSEL_SLIDES.map((svg, i) => `<div class="carousel-slide${i === 0 ? ' active' : ''}">${svg}</div>`).join('')
+    + `<div class="carousel-dots">${CAROUSEL_SLIDES.map((_, i) => `<button class="carousel-dot${i === 0 ? ' active' : ''}" data-i="${i}" aria-label="Slide ${i + 1}"></button>`).join('')}</div>`;
+
+  var idx = 0;
+  var slides = el.querySelectorAll('.carousel-slide');
+  var dots = el.querySelectorAll('.carousel-dot');
+  var timer = null;
+
+  function show(i) {
+    idx = (i + slides.length) % slides.length;
+    slides.forEach((s, j) => s.classList.toggle('active', j === idx));
+    dots.forEach((d, j) => d.classList.toggle('active', j === idx));
+  }
+  function start() { timer = setInterval(() => show(idx + 1), 5000); }
+  function stop() { clearInterval(timer); }
+
+  dots.forEach(d => d.addEventListener('click', () => { show(parseInt(d.dataset.i, 10)); stop(); start(); }));
+  el.addEventListener('mouseenter', stop);
+  el.addEventListener('mouseleave', start);
+  start();
+}
+
+// ══════════════════════════════════════════════════════
 //  AUTO-LOGIN FALLBACK
 // ══════════════════════════════════════════════════════
 window.addEventListener('DOMContentLoaded', function () {
   document.getElementById('passwordInput').focus();
+  renderCarousel('loginCarousel');
+  renderCarousel('dashboardCarousel');
 });
 </script>
 </body>
