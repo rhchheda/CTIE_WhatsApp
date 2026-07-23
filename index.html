@@ -256,12 +256,12 @@
 
   </div>
 
-  <!-- STICKY FOOTER -->
-  <div class="sticky-footer">
-    <span>Made with <span class="heart">♥</span> ~rhc · EE Lab, KLE‑CTIE</span>
-    <span class="ts">Last updated — <span id="footerTimestamp">Loading...</span></span>
-  </div>
+</div>
 
+<!-- STICKY FOOTER — persistent across login/loading/error/dashboard, not just post-login -->
+<div class="sticky-footer">
+  <span>Made with <span class="heart">♥</span> ~rhc · EE Lab, KLE‑CTIE</span>
+  <span class="ts">Last updated — <span id="footerTimestamp">—</span></span>
 </div>
 
 <script>
@@ -280,8 +280,12 @@ async function verifyPassword() {
   if (!input) { error.innerText = '❌ Please enter the password.'; error.style.display = 'block'; return; }
   btn.disabled = true; btn.innerText = 'Checking...'; error.style.display = 'none';
   try {
+    // Content-Type: text/plain avoids a CORS preflight (OPTIONS) request — Apps Script
+    // doesn't handle preflight properly, so application/json here would silently fail
+    // from any real https origin. Apps Script reads e.postData.contents as a raw string
+    // regardless of the declared Content-Type, so JSON.parse() server-side still works.
     const res = await fetch(GAS_URL, {
-      method: 'POST', mode: 'cors', headers: { 'Content-Type': 'application/json' },
+      method: 'POST', mode: 'cors', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body: JSON.stringify({ action: 'login', password: input })
     });
     const result = await res.json();
@@ -315,7 +319,7 @@ const initializedTabs = new Set();
 async function loadDashboard() {
   try {
     const res = await fetch(GAS_URL, {
-      method: 'POST', mode: 'cors', headers: { 'Content-Type': 'application/json' },
+      method: 'POST', mode: 'cors', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body: JSON.stringify({ action: 'getData' })
     });
     const data = await res.json();
