@@ -23,7 +23,7 @@
   /* ── STICKY FOOTER ── */
   .sticky-footer { position: fixed; bottom: 0; left: 0; right: 0; height: var(--footer-h); background: var(--navy);
     border-top: 1px solid rgba(201,168,76,0.2); display: flex; align-items: center; justify-content: center;
-    z-index: 300; gap: 6px; flex-wrap: wrap; padding: 0 12px; }
+    z-index: 10000; gap: 6px; flex-wrap: wrap; padding: 0 12px; }
   .sticky-footer span { font-size: 11px; color: rgba(255,255,255,0.4); letter-spacing: 0.06em; }
   .sticky-footer .heart { display: inline-block; animation: pulse 1.2s infinite; color: #dc2626; font-size: 16px; line-height: 1; }
   @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.3); } 100% { transform: scale(1); } }
@@ -85,6 +85,13 @@
   .live-dot { width:6px; height:6px; border-radius:50%; background:#2ecc71; animation: livePulse 2s ease infinite; }
   @keyframes livePulse { 0%,100% { opacity:1; } 50% { opacity:0.3; } }
   .live-text { font-size:10px; color:#2ecc71; font-weight:500; letter-spacing:0.06em; }
+  .logout-btn {
+    display: block; margin-top: 8px; margin-left: auto; padding: 5px 12px;
+    background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15); border-radius: 20px;
+    color: rgba(255,255,255,0.6); font-family: 'Outfit', sans-serif; font-size: 11px; font-weight: 500;
+    cursor: pointer; transition: 0.2s;
+  }
+  .logout-btn:hover { background: rgba(192,57,43,0.2); border-color: rgba(192,57,43,0.5); color: #f5b7b1; }
 
   /* ── CONTAINER ── */
   .container { max-width:1180px; margin:0 auto; padding:2rem 1.5rem; flex:1; }
@@ -236,6 +243,7 @@
       <div class="header-right">
         <div class="header-ts">Last updated<br /><span id="lastUpdated">—</span></div>
         <div class="live-badge"><div class="live-dot"></div><span class="live-text">LIVE</span></div>
+        <button class="logout-btn" onclick="logout()">Log out</button>
       </div>
     </div>
   </div>
@@ -308,6 +316,27 @@ async function verifyPassword() {
   }
 }
 document.getElementById('passwordInput').addEventListener('keydown', function (e) { if (e.key === 'Enter') verifyPassword(); });
+
+// ══════════════════════════════════════════════════════
+//  LOGOUT — nothing is persisted (no localStorage/sessionStorage use anywhere in
+//  this app), so this just resets the UI back to the login screen and clears the
+//  typed password out of the input so it isn't left sitting on screen.
+// ══════════════════════════════════════════════════════
+function logout() {
+  document.getElementById('reportRoot').style.display = 'none';
+  document.getElementById('errorScreen').classList.remove('show');
+  document.getElementById('password-overlay').classList.remove('hidden');
+
+  document.getElementById('loadingScreen').style.display = 'flex';
+  document.getElementById('loadingScreen').classList.remove('hidden');
+  document.getElementById('loadingMsg').textContent = 'Connecting to data...';
+
+  document.getElementById('passwordInput').value = '';
+  document.getElementById('loginError').style.display = 'none';
+  document.getElementById('passwordInput').focus();
+
+  DASHBOARD_DATA = null;
+}
 
 // ══════════════════════════════════════════════════════
 //  LOAD DATA
@@ -407,6 +436,12 @@ function moveIndicator() {
 //  RENDER
 // ══════════════════════════════════════════════════════
 function renderDashboard(data) {
+  // Idempotent: safe to call again after a logout/re-login without duplicating
+  // panels or leaking old Chart.js instances.
+  Object.keys(chartInstances).forEach(k => { try { chartInstances[k].destroy(); } catch (e) {} delete chartInstances[k]; });
+  initializedTabs.clear();
+  document.getElementById('tabPanels').innerHTML = '';
+
   document.getElementById('lastUpdated').textContent = data.lastUpdated;
   document.getElementById('footerTimestamp').textContent = data.lastUpdated;
 
