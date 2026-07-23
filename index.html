@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>KLE-CTIE Unified Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Outfit:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --navy: #0d1b3e; --navy-mid: #1a2f5e; --gold: #c9a84c; --gold-l: #e8c97a; --gold-pale: #f5e9c8;
+    --cream: #faf8f3; --soft: #f0ece0; --white: #ffffff; --text: #0d1b3e; --muted: #6b7a99;
+    --border: rgba(13,27,62,0.10); --shadow: 0 8px 32px rgba(13,27,62,0.10);
+    --green: #1b7a3e; --red: #c0392b; --blue: #2471a3; --purple: #6c3483; --footer-h: 40px;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: 'Outfit', sans-serif; background: var(--soft); color: var(--text);
+    padding-bottom: calc(var(--footer-h) + 1rem); min-height: 100vh; display: flex; flex-direction: column;
+  }
+
+  /* ── STICKY FOOTER ── */
+  .sticky-footer { position: fixed; bottom: 0; left: 0; right: 0; height: var(--footer-h); background: var(--navy);
+    border-top: 1px solid rgba(201,168,76,0.2); display: flex; align-items: center; justify-content: center;
+    z-index: 300; gap: 6px; flex-wrap: wrap; padding: 0 12px; }
+  .sticky-footer span { font-size: 11px; color: rgba(255,255,255,0.4); letter-spacing: 0.06em; }
+  .sticky-footer .heart { display: inline-block; animation: pulse 1.2s infinite; color: #dc2626; font-size: 16px; line-height: 1; }
+  @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.3); } 100% { transform: scale(1); } }
+  .sticky-footer b { color: var(--gold); font-weight: 400; font-style: italic; }
+  .sticky-footer .ts { color: rgba(255,255,255,0.3); font-size: 10px; font-family: 'JetBrains Mono', monospace; }
+
+  /* ── PASSWORD OVERLAY ── */
+  #password-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(10,20,40,0.92);
+    display:flex; justify-content:center; align-items:center; z-index:9999; backdrop-filter: blur(6px); transition: opacity 0.6s ease; }
+  #password-overlay.hidden { opacity: 0; pointer-events: none; }
+  .login-box { background:#fff; padding:40px 35px; border-radius:24px; box-shadow:0 25px 50px -12px rgba(0,0,0,0.5);
+    text-align:center; max-width:400px; width:90%; }
+  .login-box h1 { font-size:24px; color:#0b2b4a; margin-bottom:8px; }
+  .login-box h1 span { color: var(--gold); font-style: italic; }
+  .login-box p { color:#5a6a7a; font-size:14px; margin-bottom:25px; }
+  .login-box input { width:100%; padding:14px 18px; border:2px solid #e2e8f0; border-radius:12px; font-size:16px;
+    outline:none; transition:0.2s; margin-bottom:16px; }
+  .login-box input:focus { border-color: var(--gold); }
+  .login-box button { width:100%; padding:14px; background: var(--navy); color:#fff; border:none; border-radius:12px;
+    font-size:16px; font-weight:600; cursor:pointer; transition:0.2s; }
+  .login-box button:hover:not(:disabled) { background: var(--gold); color: var(--navy); }
+  .login-box button:disabled { opacity:0.7; cursor:not-allowed; }
+  .login-error { color: var(--red); font-size:13px; margin-top:10px; display:none; }
+
+  /* ── LOADING ── */
+  .loading-screen { position: fixed; inset:0; background: var(--navy); display:flex; flex-direction:column;
+    align-items:center; justify-content:center; z-index:500; transition: opacity 0.5s ease; }
+  .loading-screen.hidden { opacity:0; pointer-events:none; }
+  .loading-logo { font-family:'Cormorant Garamond', serif; font-size:36px; font-weight:600; color:#fff; margin-bottom:0.5rem; }
+  .loading-logo span { color: var(--gold); font-style: italic; }
+  .loading-tag { font-size:12px; color:rgba(255,255,255,0.4); font-style:italic; margin-bottom:2rem; }
+  .loading-bar-track { width:220px; height:3px; background:rgba(255,255,255,0.1); border-radius:3px; overflow:hidden; }
+  .loading-bar-fill { height:100%; background:linear-gradient(to right, var(--gold), var(--gold-l)); border-radius:3px; animation: loadPulse 1.5s ease-in-out infinite; }
+  @keyframes loadPulse { 0% { width:0% } 60% { width:80% } 100% { width:100% } }
+  .loading-msg { font-size:11px; color:rgba(255,255,255,0.3); margin-top:1rem; letter-spacing:0.06em; }
+
+  /* ── ERROR ── */
+  .error-screen { display:none; max-width:480px; margin:4rem auto; background:#fff; border-radius:16px; padding:2.5rem; border:1px solid var(--border); text-align:center; }
+  .error-screen.show { display:block; }
+  .error-title { font-size:18px; font-weight:600; color: var(--red); margin-bottom:0.5rem; }
+  .error-msg { font-size:13px; color: var(--muted); line-height:1.7; }
+  .error-code { font-family:'JetBrains Mono', monospace; font-size:11px; background: var(--soft); padding:8px 12px; border-radius:8px; margin-top:1rem; color: var(--muted); }
+
+  /* ── HEADER ── */
+  .report-header { background: var(--navy); padding: 2.5rem 2rem 2rem; position: relative; overflow: hidden; }
+  .report-header::before { content:''; position:absolute; inset:0;
+    background-image: linear-gradient(rgba(201,168,76,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(201,168,76,0.05) 1px, transparent 1px);
+    background-size: 50px 50px; }
+  .header-inner { max-width:1180px; margin:0 auto; position:relative; z-index:1; display:flex; justify-content:space-between; align-items:flex-end; flex-wrap:wrap; gap:1rem; }
+  .header-eyebrow { font-size:11px; font-weight:500; letter-spacing:0.15em; text-transform:uppercase; color: var(--gold); margin-bottom:0.5rem; }
+  .header-title { font-family:'Cormorant Garamond', serif; font-size: clamp(28px,5vw,50px); font-weight:600; color:#fff; line-height:1.1; margin-bottom:0.3rem; }
+  .header-title span { color: var(--gold); font-style: italic; }
+  .header-sub { font-size:13px; color:rgba(255,255,255,0.4); margin-bottom:1rem; }
+  .gold-bar { height:3px; background:linear-gradient(to right, var(--gold), var(--gold-l), var(--gold)); border-radius:2px; max-width:280px; }
+  .header-right { text-align:right; }
+  .header-ts { font-size:11px; color:rgba(255,255,255,0.3); font-family:'JetBrains Mono', monospace; }
+  .header-ts span { color: var(--gold); }
+  .live-badge { display:inline-flex; align-items:center; gap:5px; background:rgba(27,122,62,0.2); border:1px solid rgba(27,122,62,0.4); border-radius:20px; padding:4px 10px; margin-top:6px; }
+  .live-dot { width:6px; height:6px; border-radius:50%; background:#2ecc71; animation: livePulse 2s ease infinite; }
+  @keyframes livePulse { 0%,100% { opacity:1; } 50% { opacity:0.3; } }
+  .live-text { font-size:10px; color:#2ecc71; font-weight:500; letter-spacing:0.06em; }
+
+  /* ── CONTAINER ── */
+  .container { max-width:1180px; margin:0 auto; padding:2rem 1.5rem; flex:1; }
+
+  /* ── KPI GRID ── */
+  .kpi-grid { display:grid; grid-template-columns: repeat(auto-fit,minmax(150px,1fr)); gap:12px; margin-bottom:2rem; }
+  .kpi-grid.sub { margin-bottom: 1.6rem; }
+  .kpi-card { background:#fff; border-radius:14px; padding:1.2rem 1rem; border:1px solid var(--border); box-shadow:var(--shadow);
+    text-align:center; transition: transform 0.2s, box-shadow 0.2s; cursor: pointer; }
+  .kpi-card:hover { transform: translateY(-3px); box-shadow: 0 12px 28px rgba(13,27,62,0.12); }
+  .kpi-card.static { cursor: default; }
+  .kpi-label { font-size:10px; font-weight:500; letter-spacing:0.1em; text-transform:uppercase; color:var(--muted); margin-bottom:6px; }
+  .kpi-value { font-family:'Cormorant Garamond', serif; font-size:36px; font-weight:600; line-height:1; }
+  .kpi-sub { font-size:11px; color:var(--muted); margin-top:4px; }
+
+  /* ── SECTION ── */
+  .sec-label { display:flex; align-items:center; gap:10px; margin-bottom:0.75rem; }
+  .sec-num { font-family:'JetBrains Mono', monospace; font-size:11px; color: var(--gold); }
+  .sec-line { flex:1; height:1px; background:rgba(201,168,76,0.25); max-width:50px; }
+  .sec-title { font-family:'Cormorant Garamond', serif; font-size: clamp(20px,3vw,28px); font-weight:600; color: var(--navy); margin-bottom:0.4rem; }
+  .sec-title em { color: var(--gold); font-style: italic; }
+  .sec-sub { font-size:13px; color: var(--muted); margin-bottom:1.4rem; line-height:1.7; }
+
+  /* ── TAB BAR ── */
+  .tab-bar-wrap { position: relative; margin-bottom: 2rem; border-bottom: 1px solid var(--border); overflow-x: auto; -ms-overflow-style: none; scrollbar-width: none; }
+  .tab-bar-wrap::-webkit-scrollbar { display: none; }
+  .tab-bar { display: flex; gap: 4px; min-width: max-content; }
+  .tab-btn { display:flex; align-items:center; gap:7px; padding:12px 18px; background:none; border:none;
+    font-family:'Outfit', sans-serif; font-size:13.5px; font-weight:500; color: var(--muted); cursor:pointer; white-space:nowrap; transition: color 0.2s; }
+  .tab-btn .dot { width:8px; height:8px; border-radius:50%; background: var(--tab-color, var(--gold)); }
+  .tab-btn:hover { color: var(--navy); }
+  .tab-btn.active { color: var(--navy); font-weight:600; }
+  .tab-indicator { position:absolute; bottom:-1px; height:3px; border-radius:3px 3px 0 0; background: var(--gold); transition: left 0.35s cubic-bezier(.4,0,.2,1), width 0.35s cubic-bezier(.4,0,.2,1), background 0.35s ease; }
+
+  /* ── TAB PANELS ── */
+  .tab-panel { display:none; }
+  .tab-panel.active { display:block; animation: fadeSlide 0.4s ease; }
+  @keyframes fadeSlide { from { opacity:0; transform: translateY(8px); } to { opacity:1; transform: translateY(0); } }
+
+  .group-header { display:flex; align-items:center; gap:10px; margin-bottom:1.3rem; }
+  .group-header .gi { font-size:24px; }
+  .group-header .gn { font-family:'Cormorant Garamond', serif; font-size:26px; font-weight:600; color: var(--navy); }
+  .group-header .gm { font-size:12px; color: var(--muted); margin-top: 2px; }
+
+  /* ── GLANCE GRID (overview) ── */
+  .glance-grid { display:grid; grid-template-columns: repeat(auto-fit,minmax(230px,1fr)); gap:14px; margin-bottom:2.5rem; }
+  .glance-card { background:#fff; border-radius:14px; padding:1.3rem; border:1px solid var(--border); box-shadow:var(--shadow);
+    cursor:pointer; transition: transform 0.2s, box-shadow 0.2s; border-left: 4px solid var(--gc, var(--gold)); }
+  .glance-card:hover { transform: translateY(-3px); box-shadow: 0 14px 30px rgba(13,27,62,0.14); }
+  .glance-card .gtop { display:flex; align-items:center; gap:8px; margin-bottom:10px; }
+  .glance-card .gicon { font-size:20px; }
+  .glance-card .gname { font-weight:600; color: var(--navy); font-size:13.5px; }
+  .glance-card .gtotal { font-family:'Cormorant Garamond', serif; font-size:34px; font-weight:600; color: var(--gc, var(--navy)); }
+  .glance-card .gsub { font-size:11px; color: var(--muted); margin-top:2px; }
+  .glance-card .gbadge { display:inline-block; margin-top:9px; font-size:10px; font-weight:600; padding:3px 9px; border-radius:20px; background:#fee2e2; color:#991b1b; }
+
+  /* ── CHARTS ── */
+  .charts-grid { display:grid; grid-template-columns:1fr 1fr; gap:1.5rem; margin-bottom:2.5rem; }
+  .chart-card { background:#fff; border-radius:14px; padding:1.5rem; border:1px solid var(--border); box-shadow:var(--shadow); }
+  .chart-card h3 { font-size:13px; font-weight:600; color: var(--navy); margin-bottom:1rem; letter-spacing:0.05em; text-transform:uppercase; }
+  .chart-card .chart-holder { position: relative; height: 240px; }
+  .chart-card.wide .chart-holder { height: 220px; }
+
+  /* ── DATA TABLES (issues / attendance) ── */
+  .data-table-wrap { background:#fff; padding:1.5rem; border-radius:14px; border:1px solid var(--border); box-shadow:var(--shadow); margin-bottom:2.5rem; }
+  .data-table-wrap h3 { font-size:13px; font-weight:600; color: var(--navy); margin-bottom:1rem; }
+  .data-table-wrap .scroller { overflow-x: auto; }
+  .data-table-wrap table { width:100%; border-collapse:collapse; font-size:12.5px; min-width: 480px; }
+  .data-table-wrap th { text-align:left; padding:9px 8px; background: var(--soft); color: var(--navy); font-weight:600; border-bottom:2px solid var(--border); white-space: nowrap; }
+  .data-table-wrap td { padding:9px 8px; border-bottom:1px solid var(--border); color: var(--text); vertical-align: top; }
+  .badge { display:inline-block; font-size:10px; font-weight:600; padding:3px 9px; border-radius:20px; text-transform:uppercase; letter-spacing:0.03em; white-space:nowrap; }
+  .badge.status-open { background:#fee2e2; color:#991b1b; }
+  .badge.status-acknowledged { background:#fef3c7; color:#92400e; }
+  .badge.status-resolved { background:#dcfce7; color:#166534; }
+  .badge.att-badge { background:#dbeafe; color:#1e40af; }
+  .group-pill { font-size:10px; font-weight:600; padding:2px 8px; border-radius:6px; color:#fff; white-space:nowrap; }
+  .empty-note { color: var(--muted); padding:10px 0; font-size:13px; }
+
+  /* ── TOP SENDERS ── */
+  .sender-list { display:flex; flex-direction:column; gap:6px; }
+  .sender-row { display:flex; align-items:center; gap:10px; padding:8px 12px; background: var(--cream); border-radius:8px; border:1px solid var(--border); }
+  .sender-row .rank { font-family:'JetBrains Mono', monospace; font-size:11px; color: var(--muted); min-width:24px; }
+  .sender-row .name { font-weight:500; color: var(--navy); flex:1; }
+  .sender-row .count { font-family:'Cormorant Garamond', serif; font-size:18px; font-weight:600; color: var(--gold); }
+  .sender-row .pct { font-size:11px; color: var(--muted); min-width:40px; text-align:right; }
+  .sender-bar { height:4px; border-radius:4px; background:linear-gradient(to right, var(--gold), var(--gold-l)); width:0; transition: width 0.8s ease; }
+
+  /* ── PULSE HIGHLIGHT (KPI click -> section jump) ── */
+  .pulse-highlight { animation: pulseGlow 1.5s ease; }
+  @keyframes pulseGlow {
+    0% { box-shadow: 0 0 0 0 rgba(201,168,76,0.55); }
+    70% { box-shadow: 0 0 0 16px rgba(201,168,76,0); }
+    100% { box-shadow: 0 0 0 0 rgba(201,168,76,0); }
+  }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width:700px) {
+    .charts-grid { grid-template-columns:1fr; }
+    .kpi-grid { grid-template-columns: repeat(2,1fr); }
+    .header-inner { flex-direction:column; align-items:flex-start; }
+    .header-right { text-align:left; width:100%; }
+  }
+  @media (max-width:400px) { .kpi-grid { grid-template-columns:1fr; } }
+
+  /* ── UTILITY ── */
+  .reveal { opacity:0; transform: translateY(20px); transition: opacity 0.6s ease, transform 0.6s ease; }
+  .reveal.vis { opacity:1; transform: translateY(0); }
+</style>
+</head>
+<body>
+
+<!-- PASSWORD OVERLAY -->
+<div id="password-overlay">
+  <div class="login-box">
+    <h1>🔐 KLE‑CTIE <span>Unified</span></h1>
+    <p>Incubation Centre Dashboard · Enter access code</p>
+    <input type="password" id="passwordInput" placeholder="Enter password" autofocus />
+    <button onclick="verifyPassword()">Unlock Dashboard</button>
+    <div id="loginError" class="login-error">❌ Incorrect password. Try again.</div>
+  </div>
+</div>
+
+<!-- LOADING -->
+<div class="loading-screen" id="loadingScreen">
+  <div class="loading-logo">KLE‑CTIE <span>Unified</span></div>
+  <div class="loading-tag">"Build Beyond Boundaries"</div>
+  <div class="loading-bar-track"><div class="loading-bar-fill"></div></div>
+  <div class="loading-msg" id="loadingMsg">Connecting to data...</div>
+</div>
+
+<!-- ERROR -->
+<div class="error-screen" id="errorScreen">
+  <div class="error-title">Could not load dashboard</div>
+  <div class="error-msg">The GAS Web App could not be reached. Make sure the script is deployed correctly and the URL is set in this HTML file.</div>
+  <div class="error-code" id="errorDetail"></div>
+</div>
+
+<!-- DASHBOARD -->
+<div id="reportRoot" style="display:none;">
+
+  <div class="report-header">
+    <div class="header-inner">
+      <div class="header-left">
+        <div class="header-eyebrow">KLE Technological University · CTIE</div>
+        <div class="header-title">KLE‑CTIE <span>Unified</span></div>
+        <div class="header-sub" id="headerSub">Multi-group WhatsApp synopsis · Live Dashboard</div>
+        <div class="gold-bar"></div>
+      </div>
+      <div class="header-right">
+        <div class="header-ts">Last updated<br /><span id="lastUpdated">—</span></div>
+        <div class="live-badge"><div class="live-dot"></div><span class="live-text">LIVE</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="container">
+
+    <!-- OVERVIEW KPI GRID -->
+    <div class="kpi-grid" id="overviewKpiGrid"></div>
+
+    <!-- TAB BAR -->
+    <div class="tab-bar-wrap">
+      <div class="tab-bar" id="tabBar"></div>
+      <div class="tab-indicator" id="tabIndicator"></div>
+    </div>
+
+    <!-- TAB PANELS -->
+    <div id="tabPanels"></div>
+
+  </div>
+
+  <!-- STICKY FOOTER -->
+  <div class="sticky-footer">
+    <span>Made with <span class="heart">♥</span> ~rhc · EE Lab, KLE‑CTIE</span>
+    <span class="ts">Last updated — <span id="footerTimestamp">Loading...</span></span>
+  </div>
+
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════
+//  CONFIG — SET YOUR GAS WEB APP URL HERE
+// ══════════════════════════════════════════════════════
+const GAS_URL = "https://script.google.com/macros/s/AKfycbzSCi-dzDNJ-Pfic6-ysNTafzoaI2LPgoH2An5Q2xXPwucuZmohxQxd_5KuYCfCqwp40Q/exec";
+
+// ══════════════════════════════════════════════════════
+//  PASSWORD
+// ══════════════════════════════════════════════════════
+async function verifyPassword() {
+  var input = document.getElementById('passwordInput').value;
+  var error = document.getElementById('loginError');
+  var btn = document.querySelector('.login-box button');
+  if (!input) { error.innerText = '❌ Please enter the password.'; error.style.display = 'block'; return; }
+  btn.disabled = true; btn.innerText = 'Checking...'; error.style.display = 'none';
+  try {
+    const res = await fetch(GAS_URL, {
+      method: 'POST', mode: 'cors', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'login', password: input })
+    });
+    const result = await res.json();
+    btn.disabled = false; btn.innerText = 'Unlock Dashboard';
+    if (result.success) {
+      document.getElementById('password-overlay').classList.add('hidden');
+      document.getElementById('reportRoot').style.display = 'block';
+      loadDashboard();
+    } else {
+      error.innerText = '❌ Incorrect password. Try again.';
+      error.style.display = 'block';
+      document.getElementById('passwordInput').value = '';
+      document.getElementById('passwordInput').focus();
+    }
+  } catch (err) {
+    btn.disabled = false; btn.innerText = 'Unlock Dashboard';
+    error.innerText = '❌ Server error. Please try again.';
+    error.style.display = 'block';
+    console.error(err);
+  }
+}
+document.getElementById('passwordInput').addEventListener('keydown', function (e) { if (e.key === 'Enter') verifyPassword(); });
+
+// ══════════════════════════════════════════════════════
+//  LOAD DATA
+// ══════════════════════════════════════════════════════
+let DASHBOARD_DATA = null;
+const chartInstances = {};
+const initializedTabs = new Set();
+
+async function loadDashboard() {
+  try {
+    const res = await fetch(GAS_URL, {
+      method: 'POST', mode: 'cors', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'getData' })
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    DASHBOARD_DATA = data;
+    renderDashboard(data);
+    document.getElementById('loadingScreen').classList.add('hidden');
+    setTimeout(() => { document.getElementById('loadingScreen').style.display = 'none'; }, 500);
+  } catch (err) {
+    document.getElementById('loadingScreen').classList.add('hidden');
+    document.getElementById('errorScreen').classList.add('show');
+    document.getElementById('errorDetail').textContent = err.message;
+  }
+}
+
+// ══════════════════════════════════════════════════════
+//  SMALL HELPERS
+// ══════════════════════════════════════════════════════
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function fmtDate(d) {
+  var dt = new Date(d);
+  if (isNaN(dt)) return '—';
+  return dt.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+}
+function statusClass(s) { return 'status-' + String(s || 'open').toLowerCase().replace(/[^a-z]/g, ''); }
+
+function animateCount(el, target, opts) {
+  opts = opts || {};
+  var finalText = target == null ? '—' : (opts.prefix || '') + target.toLocaleString('en-IN') + (opts.suffix || '');
+  // Set the real value up front — if rAF never runs (backgrounded tab, reduced motion,
+  // very old device) the number is still correct, just not animated.
+  el.textContent = finalText;
+  if (target == null || !Number.isInteger(target)) return;
+
+  var duration = 900, startTime = null;
+  function step(ts) {
+    if (!startTime) startTime = ts;
+    var progress = Math.min((ts - startTime) / duration, 1);
+    var eased = 1 - Math.pow(1 - progress, 3);
+    var val = Math.round(target * eased);
+    el.textContent = (opts.prefix || '') + val.toLocaleString('en-IN') + (opts.suffix || '');
+    if (progress < 1) requestAnimationFrame(step);
+    else el.textContent = finalText;
+  }
+  requestAnimationFrame(step);
+}
+
+// Switches to a tab and, if a target element id is given, scrolls to it and pulses it —
+// this is the "KPI click -> relevant section" behaviour.
+function goTo(tabKey, targetId) {
+  switchTab(tabKey);
+  if (targetId) {
+    setTimeout(function () {
+      var el = document.getElementById(targetId);
+      if (!el) return;
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      el.classList.remove('pulse-highlight');
+      void el.offsetWidth; // restart animation if already applied recently
+      el.classList.add('pulse-highlight');
+      setTimeout(function () { el.classList.remove('pulse-highlight'); }, 1500);
+    }, 120);
+  }
+}
+
+function switchTab(key) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === key));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.dataset.tab === key));
+  moveIndicator();
+  if (!initializedTabs.has(key)) {
+    initializedTabs.add(key);
+    if (key !== 'overview') initGroupCharts(key);
+  }
+}
+
+function moveIndicator() {
+  var active = document.querySelector('.tab-btn.active');
+  var indicator = document.getElementById('tabIndicator');
+  if (!active) return;
+  indicator.style.left = active.offsetLeft + 'px';
+  indicator.style.width = active.offsetWidth + 'px';
+  indicator.style.background = active.dataset.color || 'var(--gold)';
+}
+
+// ══════════════════════════════════════════════════════
+//  RENDER
+// ══════════════════════════════════════════════════════
+function renderDashboard(data) {
+  document.getElementById('lastUpdated').textContent = data.lastUpdated;
+  document.getElementById('footerTimestamp').textContent = data.lastUpdated;
+
+  var groupList = Object.values(data.groups || {});
+  document.getElementById('headerSub').textContent =
+    groupList.length + ' WhatsApp groups tracked · ' + (data.overview.totalMessages || 0) + ' messages parsed';
+
+  renderOverviewKpis(data);
+  renderTabBar(groupList);
+  renderOverviewPanel(data, groupList);
+  groupList.forEach(g => renderGroupPanel(g));
+
+  // Reveal-on-scroll for cards
+  document.querySelectorAll('.kpi-card, .chart-card, .data-table-wrap, .glance-card').forEach(el => el.classList.add('reveal'));
+  var io = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('vis'); io.unobserve(e.target); } });
+  }, { threshold: 0.1 });
+  document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+
+  // Default tab
+  switchTab('overview');
+  initOverviewChart(data, groupList);
+  window.addEventListener('resize', moveIndicator);
+}
+
+// ---------- OVERVIEW KPIs ----------
+function renderOverviewKpis(data) {
+  var o = data.overview;
+  var kpis = [
+    { label: 'Total Messages', value: o.totalMessages, cls: 'blue', target: 'glanceGrid' },
+    { label: 'Open Issues', value: o.openIssues, cls: 'red', target: 'overviewIssuesTable' },
+    { label: 'Avg. Response Time', value: o.avgResponseHrs, suffix: o.avgResponseHrs != null ? ' hrs' : '', cls: 'purple', target: 'overviewIssuesTable' },
+    { label: 'Attendance Flags', value: o.attendanceFlags, cls: 'gold', tab: 'iec_core', target: null },
+    { label: 'Job / Internship Posts', value: o.jobPosts, cls: 'green', tab: 'incubatees', target: null },
+    { label: 'Events & Workshops', value: o.events, cls: 'purple', target: 'glanceGrid' }
+  ];
+  var grid = document.getElementById('overviewKpiGrid');
+  grid.innerHTML = kpis.map((k, i) =>
+    `<div class="kpi-card" id="ovKpi${i}" onclick="goTo('${k.tab || 'overview'}', ${k.target ? "'" + k.target + "'" : 'null'})">
+      <div class="kpi-label">${esc(k.label)}</div>
+      <div class="kpi-value" id="ovKpiVal${i}" style="color:var(--${k.cls === 'gold' ? 'gold' : k.cls})">—</div>
+      <div class="kpi-sub">${k.value == null ? 'No data yet' : (k.label === 'Open Issues' ? 'Across all groups' : k.label === 'Avg. Response Time' ? 'Time to first reply' : 'This period')}</div>
+    </div>`
+  ).join('');
+  kpis.forEach((k, i) => animateCount(document.getElementById('ovKpiVal' + i), k.value, { suffix: k.suffix || '' }));
+}
+
+// ---------- TAB BAR ----------
+function renderTabBar(groupList) {
+  var bar = document.getElementById('tabBar');
+  var html = `<button class="tab-btn" data-tab="overview" onclick="switchTab('overview')"><span>🗂️</span> Overview</button>`;
+  groupList.forEach(g => {
+    html += `<button class="tab-btn" data-tab="${g.key}" data-color="${g.color}" onclick="switchTab('${g.key}')">
+      <span class="dot" style="--tab-color:${g.color}"></span>${esc(g.icon)} ${esc(g.name)}
+    </button>`;
+  });
+  bar.innerHTML = html;
+}
+
+// ---------- OVERVIEW PANEL ----------
+function renderOverviewPanel(data, groupList) {
+  var glanceHtml = groupList.map(g => `
+    <div class="glance-card" style="--gc:${g.color}" onclick="switchTab('${g.key}')">
+      <div class="gtop"><span class="gicon">${esc(g.icon)}</span><span class="gname">${esc(g.name)}</span></div>
+      <div class="gtotal">${g.total}</div>
+      <div class="gsub">messages · ${Object.keys(g.categories || {}).length} categories</div>
+      ${g.issues && g.issues.open > 0 ? `<div class="gbadge">${g.issues.open} open issue${g.issues.open === 1 ? '' : 's'}</div>` : ''}
+    </div>
+  `).join('');
+
+  var allIssues = [];
+  groupList.forEach(g => (g.issues.recent || []).forEach(i => allIssues.push(Object.assign({}, i, { groupName: g.name, groupColor: g.color, groupIcon: g.icon }))));
+  allIssues.sort((a, b) => new Date(b.date) - new Date(a.date));
+  allIssues = allIssues.slice(0, 12);
+
+  var issuesRows = allIssues.length ? allIssues.map(i => `
+    <tr>
+      <td><span class="group-pill" style="background:${i.groupColor}">${esc(i.groupIcon)} ${esc(i.groupName)}</span></td>
+      <td>${fmtDate(i.date)}</td>
+      <td><strong>${esc(i.sender)}</strong></td>
+      <td>${esc(i.snippet)}</td>
+      <td><span class="badge ${statusClass(i.status)}">${esc(i.status)}</span></td>
+      <td>${i.responseHrs != null ? i.responseHrs + ' hrs' : '—'}</td>
+    </tr>`).join('') : '';
+
+  var panel = document.createElement('div');
+  panel.className = 'tab-panel';
+  panel.dataset.tab = 'overview';
+  panel.innerHTML = `
+    <div class="sec-label"><span class="sec-num">01</span><div class="sec-line"></div></div>
+    <div class="sec-title">Groups at a <em>Glance</em></div>
+    <div class="sec-sub">Every WhatsApp group tracked by this portal. Click a card to open its full synopsis.</div>
+    <div class="glance-grid" id="glanceGrid">${glanceHtml || '<p class="empty-note">No groups configured yet.</p>'}</div>
+
+    <div class="sec-label"><span class="sec-num">02</span><div class="sec-line"></div></div>
+    <div class="sec-title">Cross-Group <em>Activity</em></div>
+    <div class="sec-sub">Weekly message volume across all groups.</div>
+    <div class="chart-card wide" style="margin-bottom:2.5rem;">
+      <div class="chart-holder"><canvas id="overviewTrendChart"></canvas></div>
+    </div>
+
+    <div class="sec-label"><span class="sec-num">03</span><div class="sec-line"></div></div>
+    <div class="sec-title">Open <em>Issues</em> Across Groups</div>
+    <div class="sec-sub">Infrastructure alerts and escalations that still need a reply or resolution, newest first.</div>
+    <div class="data-table-wrap" id="overviewIssuesTable">
+      <div class="scroller">
+        ${allIssues.length
+          ? `<table><thead><tr><th>Group</th><th>Date</th><th>Sender</th><th>Message</th><th>Status</th><th>Response</th></tr></thead><tbody>${issuesRows}</tbody></table>`
+          : '<p class="empty-note">✅ No open issues right now.</p>'}
+      </div>
+    </div>
+  `;
+  document.getElementById('tabPanels').appendChild(panel);
+}
+
+function initOverviewChart(data, groupList) {
+  // Union of every week label across groups, chronologically — each group's dataset
+  // is sparse (null where that group had no messages that week) so the shared axis stays honest.
+  var weekOrder = [];
+  var seen = new Set();
+  groupList.forEach(g => (g.trend || []).forEach(t => { if (!seen.has(t.week)) { seen.add(t.week); weekOrder.push(t.week); } }));
+
+  var datasets = groupList.map(g => {
+    var map = {};
+    (g.trend || []).forEach(t => { map[t.week] = t.count; });
+    return {
+      label: g.icon + ' ' + g.name,
+      data: weekOrder.map(w => map[w] != null ? map[w] : null),
+      borderColor: g.color, backgroundColor: g.color + '22',
+      tension: 0.35, fill: true, spanGaps: true, pointRadius: 3, pointBackgroundColor: g.color
+    };
+  });
+
+  var ctx = document.getElementById('overviewTrendChart');
+  if (!ctx) return;
+  chartInstances.overviewTrend = new Chart(ctx, {
+    type: 'line',
+    data: { labels: weekOrder, datasets: datasets },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 11 } } } },
+      scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
+    }
+  });
+}
+
+// ---------- PER-GROUP PANEL ----------
+function renderGroupPanel(g) {
+  var kpis = [
+    { label: 'Total Messages', value: g.total, cls: 'blue' }
+  ];
+  var topCat = Object.entries(g.categories || {}).sort((a, b) => b[1] - a[1])[0];
+  if (topCat) kpis.push({ label: 'Top Category', value: topCat[1], sub: topCat[0], cls: 'gold', isTop: true });
+  if (g.attendance && g.attendance.total > 0) kpis.push({ label: 'Attendance Flags', value: g.attendance.total, cls: 'red' });
+  if (g.issues && (g.issues.open + g.issues.acknowledged + g.issues.resolved) > 0) {
+    kpis.push({ label: 'Open Issues', value: g.issues.open, cls: 'red' });
+    if (g.issues.avgResponseHrs != null) kpis.push({ label: 'Avg. Response', value: g.issues.avgResponseHrs, suffix: ' hrs', cls: 'purple' });
+  }
+
+  var kpiHtml = kpis.map((k, i) => `
+    <div class="kpi-card static">
+      <div class="kpi-label">${esc(k.label)}</div>
+      <div class="kpi-value" id="grp-${g.key}-kpi-${i}" style="color:${k.cls === 'gold' ? g.color : 'var(--' + k.cls + ')'}">—</div>
+      <div class="kpi-sub">${k.isTop ? esc(k.sub) : 'This period'}</div>
+    </div>`).join('');
+
+  var senderList = (g.topSenders || []);
+  var maxSender = senderList.length ? senderList[0][1] : 1;
+  var senderHtml = senderList.length ? `<div class="sender-list">` + senderList.map((s, idx) => {
+    var pct = g.total ? Math.round((s[1] / g.total) * 100) : 0;
+    var barWidth = Math.round((s[1] / maxSender) * 100);
+    return `<div class="sender-row">
+      <span class="rank">#${idx + 1}</span><span class="name">${esc(s[0])}</span>
+      <span class="count">${s[1]}</span><span class="pct">${pct}%</span>
+      <div style="flex:1;max-width:80px;"><div class="sender-bar" data-w="${barWidth}"></div></div>
+    </div>`;
+  }).join('') + `</div>` : '<p class="empty-note">No messages parsed yet.</p>';
+
+  var issuesHtml = '';
+  if (g.issues && g.issues.recent && g.issues.recent.length) {
+    var rows = g.issues.recent.map(i => `
+      <tr><td>${fmtDate(i.date)}</td><td><strong>${esc(i.sender)}</strong></td><td>${esc(i.category)}</td>
+      <td>${esc(i.snippet)}</td><td><span class="badge ${statusClass(i.status)}">${esc(i.status)}</span></td>
+      <td>${i.responseHrs != null ? i.responseHrs + ' hrs' : '—'}</td></tr>`).join('');
+    issuesHtml = `
+      <div class="data-table-wrap" id="issues-${g.key}">
+        <h3>Open Items — ${esc(g.name)}</h3>
+        <div class="scroller"><table><thead><tr><th>Date</th><th>Sender</th><th>Category</th><th>Message</th><th>Status</th><th>Response</th></tr></thead>
+        <tbody>${rows}</tbody></table></div>
+      </div>`;
+  }
+
+  var attHtml = '';
+  if (g.attendance && g.attendance.recent && g.attendance.recent.length) {
+    var attRows = g.attendance.recent.map(a => `
+      <tr><td>${fmtDate(a.date)}</td><td><strong>${esc(a.sender)}</strong></td>
+      <td><span class="badge att-badge">${esc(a.status)}</span></td><td>${esc(a.snippet)}</td></tr>`).join('');
+    attHtml = `
+      <div class="data-table-wrap" id="attendance-${g.key}">
+        <h3>Attendance Flags — ${esc(g.name)} <span style="font-weight:400;color:var(--muted);text-transform:none;font-size:11px;">(best-effort, correct directly in the sheet)</span></h3>
+        <div class="scroller"><table><thead><tr><th>Date</th><th>Sender</th><th>Status</th><th>Message</th></tr></thead>
+        <tbody>${attRows}</tbody></table></div>
+      </div>`;
+  }
+
+  var panel = document.createElement('div');
+  panel.className = 'tab-panel';
+  panel.dataset.tab = g.key;
+  panel.innerHTML = `
+    <div class="group-header">
+      <span class="gi">${esc(g.icon)}</span>
+      <div><div class="gn">${esc(g.name)}</div><div class="gm">${g.total} messages parsed</div></div>
+    </div>
+    <div class="kpi-grid sub">${kpiHtml}</div>
+
+    <div class="charts-grid">
+      <div class="chart-card"><h3>Category Breakdown</h3><div class="chart-holder"><canvas id="cat-${g.key}"></canvas></div></div>
+      <div class="chart-card"><h3>Top Contributors</h3><div id="sender-${g.key}">${senderHtml}</div></div>
+    </div>
+
+    <div class="chart-card wide" style="margin-bottom:2.5rem;">
+      <h3>Weekly Activity Trend</h3>
+      <div class="chart-holder"><canvas id="trend-${g.key}"></canvas></div>
+    </div>
+
+    ${issuesHtml}
+    ${attHtml}
+  `;
+  document.getElementById('tabPanels').appendChild(panel);
+}
+
+function initGroupCharts(key) {
+  var g = (DASHBOARD_DATA.groups || {})[key];
+  if (!g) return;
+
+  // sender bars animate their width once the tab is visible
+  document.querySelectorAll(`#sender-${key} .sender-bar`).forEach(el => {
+    setTimeout(() => { el.style.width = el.dataset.w + '%'; }, 50);
+  });
+
+  var kpis = [{ value: g.total }];
+  var topCat = Object.entries(g.categories || {}).sort((a, b) => b[1] - a[1])[0];
+  if (topCat) kpis.push({ value: topCat[1] });
+  if (g.attendance && g.attendance.total > 0) kpis.push({ value: g.attendance.total });
+  if (g.issues && (g.issues.open + g.issues.acknowledged + g.issues.resolved) > 0) {
+    kpis.push({ value: g.issues.open });
+    if (g.issues.avgResponseHrs != null) kpis.push({ value: g.issues.avgResponseHrs, suffix: ' hrs' });
+  }
+  kpis.forEach((k, i) => {
+    var el = document.getElementById(`grp-${key}-kpi-${i}`);
+    if (el) animateCount(el, k.value, { suffix: k.suffix || '' });
+  });
+
+  var catLabels = Object.keys(g.categories || {});
+  var catValues = Object.values(g.categories || {});
+  if (catLabels.length === 0) { catLabels = ['No data']; catValues = [1]; }
+  var catCtx = document.getElementById('cat-' + key);
+  if (catCtx) {
+    chartInstances['cat-' + key] = new Chart(catCtx, {
+      type: 'doughnut',
+      data: { labels: catLabels, datasets: [{ data: catValues, backgroundColor: palette(catLabels.length), borderWidth: 2, borderColor: '#fff' }] },
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } } } }
+    });
+  }
+
+  var trendCtx = document.getElementById('trend-' + key);
+  if (trendCtx) {
+    var labels = (g.trend || []).map(t => t.week);
+    var values = (g.trend || []).map(t => t.count);
+    if (labels.length === 0) { labels = ['No data']; values = [0]; }
+    chartInstances['trend-' + key] = new Chart(trendCtx, {
+      type: 'line',
+      data: { labels: labels, datasets: [{ label: 'Messages', data: values, borderColor: g.color, backgroundColor: g.color + '22', tension: 0.35, fill: true, pointRadius: 3, pointBackgroundColor: g.color }] },
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
+    });
+  }
+}
+
+function palette(n) {
+  var base = ['#0d1b3e', '#c9a84c', '#2471a3', '#1b7a3e', '#c0392b', '#6c3483', '#e67e22', '#16a085', '#6b7a99'];
+  var out = [];
+  for (var i = 0; i < n; i++) out.push(base[i % base.length]);
+  return out;
+}
+
+// ══════════════════════════════════════════════════════
+//  AUTO-LOGIN FALLBACK
+// ══════════════════════════════════════════════════════
+window.addEventListener('DOMContentLoaded', function () {
+  document.getElementById('passwordInput').focus();
+});
+</script>
+</body>
+</html>
