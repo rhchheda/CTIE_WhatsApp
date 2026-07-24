@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>KLE-CTIE-Pulse,Unified Dashboard</title>
+<title>KLE-CTIE Unified Dashboard</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Outfit:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
 <style>
@@ -25,8 +25,14 @@
     border-top: 1px solid rgba(201,168,76,0.2); display: flex; align-items: center; justify-content: center;
     z-index: 10000; gap: 6px; flex-wrap: wrap; padding: 0 12px; }
   .sticky-footer span { font-size: 11px; color: rgba(255,255,255,0.4); letter-spacing: 0.06em; }
-  .sticky-footer .heart { display: inline-block; animation: pulse 1.2s infinite; color: #dc2626; font-size: 16px; line-height: 1; }
-  @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.3); } 100% { transform: scale(1); } }
+  .sticky-footer .heart { display: inline-block; animation: heartbeat 1.05s ease-in-out infinite; transform-origin: center; color: #dc2626; font-size: 16px; line-height: 1; }
+  @keyframes heartbeat {
+    0%, 100% { transform: scale(1); }
+    16% { transform: scale(1.28); }
+    30% { transform: scale(0.94); }
+    44% { transform: scale(1.18); }
+    60% { transform: scale(1); }
+  }
   .sticky-footer b { color: var(--gold); font-weight: 400; font-style: italic; }
   .sticky-footer .ts { color: rgba(255,255,255,0.3); font-size: 10px; font-family: 'JetBrains Mono', monospace; }
 
@@ -71,11 +77,18 @@
   .loading-screen.hidden { opacity:0; pointer-events:none; }
   .loading-logo { font-family:'Cormorant Garamond', serif; font-size:36px; font-weight:600; color:#fff; margin-bottom:0.5rem; }
   .loading-logo span { color: var(--gold); font-style: italic; }
-  .loading-tag { font-size:12px; color:rgba(255,255,255,0.4); font-style:italic; margin-bottom:2rem; }
-  .loading-bar-track { width:220px; height:3px; background:rgba(255,255,255,0.1); border-radius:3px; overflow:hidden; }
-  .loading-bar-fill { height:100%; background:linear-gradient(to right, var(--gold), var(--gold-l)); border-radius:3px; animation: loadPulse 1.5s ease-in-out infinite; }
-  @keyframes loadPulse { 0% { width:0% } 60% { width:80% } 100% { width:100% } }
-  .loading-msg { font-size:11px; color:rgba(255,255,255,0.3); margin-top:1rem; letter-spacing:0.06em; }
+  .loading-tag { font-size:12px; color:rgba(255,255,255,0.4); font-style:italic; margin-bottom:1.5rem; }
+  .loading-rings { position: relative; width: 78px; height: 78px; margin: 0 auto 1.4rem; }
+  .loading-rings::before, .loading-rings::after {
+    content: ''; position: absolute; inset: 0; border-radius: 50%; border: 2px solid transparent;
+    border-top-color: var(--gold); border-right-color: rgba(232,201,122,0.5); animation: ringSpin 1.4s linear infinite;
+  }
+  .loading-rings::after { inset: 11px; border-top-color: rgba(255,255,255,0.7); animation-duration: 1.9s; animation-direction: reverse; }
+  .loading-dot { position: absolute; inset: 28px; border-radius: 50%; background: var(--gold);
+    box-shadow: 0 0 24px rgba(201,168,76,0.65); animation: dotPulse 1.25s ease-in-out infinite; }
+  @keyframes ringSpin { to { transform: rotate(360deg); } }
+  @keyframes dotPulse { 0%, 100% { transform: scale(0.78); opacity: 0.65; } 50% { transform: scale(1); opacity: 1; } }
+  .loading-msg { font-size:11px; color:rgba(255,255,255,0.4); margin-top:0.2rem; letter-spacing:0.06em; text-transform: uppercase; }
 
   /* ── ERROR ── */
   .error-screen { display:none; max-width:480px; margin:4rem auto; background:#fff; border-radius:16px; padding:2.5rem; border:1px solid var(--border); text-align:center; }
@@ -109,6 +122,19 @@
     cursor: pointer; transition: 0.2s;
   }
   .logout-btn:hover { background: rgba(192,57,43,0.2); border-color: rgba(192,57,43,0.5); color: #f5b7b1; }
+  .header-btn-row { display: flex; gap: 8px; justify-content: flex-end; margin-top: 8px; }
+  .header-btn-row .logout-btn { margin-top: 0; }
+  .refresh-btn:hover { background: rgba(27,122,62,0.2); border-color: rgba(27,122,62,0.5); color: #a9e6bd; }
+
+  /* ── TOAST ── */
+  .toast-wrap { position: fixed; right: 16px; bottom: 52px; z-index: 10001; display: grid; gap: 10px; width: min(340px, calc(100vw - 32px)); }
+  .toast { border-radius: 10px; border: 1px solid var(--border); background: #fff; box-shadow: var(--shadow); padding: 12px 14px; display: grid; gap: 3px; animation: toastIn 0.25s ease both; }
+  .toast-title { font-weight: 700; color: var(--navy); font-size: 13px; }
+  .toast-body { color: var(--muted); font-size: 12.5px; line-height: 1.4; }
+  .toast.error { border-left: 4px solid var(--red); }
+  .toast.success { border-left: 4px solid var(--green); }
+  .toast.info { border-left: 4px solid var(--blue); }
+  @keyframes toastIn { from { opacity:0; transform: translateY(8px); } to { opacity:1; transform: translateY(0); } }
 
   /* ── CONTAINER ── */
   .container { max-width:1180px; margin:0 auto; padding:2rem 1.5rem; flex:1; }
@@ -116,10 +142,18 @@
   /* ── KPI GRID ── */
   .kpi-grid { display:grid; grid-template-columns: repeat(auto-fit,minmax(150px,1fr)); gap:12px; margin-bottom:2rem; }
   .kpi-grid.sub { margin-bottom: 1.6rem; }
-  .kpi-card { background:#fff; border-radius:14px; padding:1.2rem 1rem; border:1px solid var(--border); box-shadow:var(--shadow);
-    text-align:center; transition: transform 0.2s, box-shadow 0.2s; cursor: pointer; }
+  .kpi-card { position: relative; overflow: hidden; background:#fff; border-radius:14px; padding:1.2rem 1rem; border:1px solid var(--border); box-shadow:var(--shadow);
+    text-align:center; transition: transform 0.2s, box-shadow 0.2s; cursor: pointer;
+    animation: kpiRiseIn 0.5s ease both; }
   .kpi-card:hover { transform: translateY(-3px); box-shadow: 0 12px 28px rgba(13,27,62,0.12); }
   .kpi-card.static { cursor: default; }
+  .kpi-card::before { content: ''; position: absolute; inset: 0 0 auto 0; height: 4px; background: var(--accent, var(--gold)); }
+  .kpi-card::after { content: ''; position: absolute; width: 90px; height: 90px; right: -40px; bottom: -42px; border-radius: 50%;
+    background: var(--accent, var(--gold)); opacity: 0.10; }
+  .kpi-card:nth-child(1) { animation-delay: 0.02s; } .kpi-card:nth-child(2) { animation-delay: 0.06s; }
+  .kpi-card:nth-child(3) { animation-delay: 0.10s; } .kpi-card:nth-child(4) { animation-delay: 0.14s; }
+  .kpi-card:nth-child(5) { animation-delay: 0.18s; } .kpi-card:nth-child(6) { animation-delay: 0.22s; }
+  @keyframes kpiRiseIn { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
   .kpi-label { font-size:10px; font-weight:500; letter-spacing:0.1em; text-transform:uppercase; color:var(--muted); margin-bottom:6px; }
   .kpi-value { font-family:'Cormorant Garamond', serif; font-size:36px; font-weight:600; line-height:1; }
   .kpi-sub { font-size:11px; color:var(--muted); margin-top:4px; }
@@ -133,9 +167,16 @@
   .sec-sub { font-size:13px; color: var(--muted); margin-bottom:1.4rem; line-height:1.7; }
 
   /* ── TAB BAR ── */
-  .tab-bar-wrap { position: relative; margin-bottom: 2rem; border-bottom: 1px solid var(--border); overflow-x: auto; -ms-overflow-style: none; scrollbar-width: none; }
+  .tab-bar-wrap { position: sticky; top: 0; z-index: 50; background: var(--soft); display: flex; align-items: center; gap: 14px;
+    margin-bottom: 2rem; border-bottom: 1px solid var(--border); overflow-x: auto; -ms-overflow-style: none; scrollbar-width: none;
+    transition: box-shadow 0.25s ease; }
   .tab-bar-wrap::-webkit-scrollbar { display: none; }
-  .tab-bar { display: flex; gap: 4px; min-width: max-content; }
+  .tab-bar-wrap.scrolled { box-shadow: 0 8px 22px rgba(13,27,62,0.10); }
+  .tab-bar-brand { display: flex; align-items: center; gap: 8px; padding: 10px 0; flex-shrink: 0; }
+  .tab-bar-brand .mark { width: 26px; height: 26px; border-radius: 7px; background: var(--navy); color: var(--gold);
+    display: flex; align-items: center; justify-content: center; font-family: 'Cormorant Garamond', serif; font-size: 15px; font-weight: 600; }
+  .tab-bar-brand span { font-size: 12.5px; font-weight: 600; color: var(--navy); white-space: nowrap; }
+  .tab-bar { display: flex; gap: 4px; min-width: max-content; position: relative; }
   .tab-btn { display:flex; align-items:center; gap:7px; padding:12px 18px; background:none; border:none;
     font-family:'Outfit', sans-serif; font-size:13.5px; font-weight:500; color: var(--muted); cursor:pointer; white-space:nowrap; transition: color 0.2s; }
   .tab-btn .dot { width:8px; height:8px; border-radius:50%; background: var(--tab-color, var(--gold)); }
@@ -204,12 +245,55 @@
     100% { box-shadow: 0 0 0 0 rgba(201,168,76,0); }
   }
 
+  /* ── PRIMARY BUTTON ── */
+  .primary-btn { background: var(--gold); color: var(--navy); border: none; border-radius: 10px; padding: 11px 20px;
+    font-weight: 600; font-size: 13px; cursor: pointer; font-family: 'Outfit', sans-serif; transition: 0.2s; }
+  .primary-btn:hover { background: var(--gold-l); transform: translateY(-1px); }
+
+  /* ── PDF REPORT ── */
+  .pdf-report { border: 1px solid var(--border); border-radius: 14px; overflow: hidden; background: #fff; box-shadow: var(--shadow); margin-bottom: 2rem; }
+  .pdf-cover { padding: 34px 32px; color: #fff; position: relative; overflow: hidden;
+    background: linear-gradient(120deg, var(--navy), var(--navy-mid)); }
+  .pdf-cover::before { content: ''; position: absolute; inset: 0;
+    background-image: linear-gradient(rgba(201,168,76,0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(201,168,76,0.06) 1px, transparent 1px);
+    background-size: 40px 40px; }
+  .pdf-cover-inner { position: relative; z-index: 1; }
+  .report-cover-title { font-family: 'Cormorant Garamond', serif; font-size: clamp(28px,4.5vw,44px); line-height: 1; margin-bottom: 10px; }
+  .report-cover-title em { color: var(--gold); font-style: italic; }
+  .report-cover-sub { color: rgba(255,255,255,0.65); max-width: 720px; line-height: 1.6; font-size: 13.5px; }
+  .report-meta { margin-top: 18px; font-size: 11px; color: rgba(255,255,255,0.45); font-family: 'JetBrains Mono', monospace; }
+  .report-kpis { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 12px; padding: 18px; background: var(--soft); border-bottom: 1px solid var(--border); }
+  .report-kpi { border-radius: 10px; padding: 14px; color: #fff; background: var(--navy); }
+  .report-kpi:nth-child(2) { background: var(--blue); } .report-kpi:nth-child(3) { background: var(--red); } .report-kpi:nth-child(4) { background: var(--purple); }
+  .report-kpi-label { font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(255,255,255,0.72); }
+  .report-kpi-value { margin-top: 6px; font-family: 'Cormorant Garamond', serif; font-size: 28px; line-height: 1; }
+  .report-section { padding: 18px; border-top: 1px solid var(--border); }
+  .report-section-title { color: var(--navy); font-size: 16px; font-weight: 700; margin-bottom: 10px; padding-bottom: 6px; border-bottom: 2px solid var(--gold); }
+  .report-table { width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 10px; }
+  .report-table th { background: var(--navy); color: #fff; text-align: left; padding: 7px 9px; }
+  .report-table td { border: 1px solid var(--border); padding: 7px 9px; vertical-align: top; }
+  .report-table tr:nth-child(even) td { background: #f8fafc; }
+  .report-note { color: var(--muted); font-size: 11.5px; line-height: 1.5; margin: 0 0 10px; }
+
+  @media print {
+    body { background: #fff; padding-bottom: 0; }
+    #password-overlay, .loading-screen, .error-screen, .carousel-wrap, .tab-bar-wrap, .sticky-footer, .toast-wrap, .report-header,
+    #overviewKpiGrid, .primary-btn { display: none !important; }
+    .container { max-width: none; padding: 0; }
+    #tabPanels .tab-panel { display: none !important; }
+    #tabPanels .tab-panel[data-tab="report"] { display: block !important; }
+    .pdf-report { box-shadow: none; border: 0; }
+    .pdf-cover, .report-kpi, .report-table th { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+    @page { size: A4 landscape; margin: 12mm; }
+  }
+
   /* ── RESPONSIVE ── */
   @media (max-width:700px) {
     .charts-grid { grid-template-columns:1fr; }
     .kpi-grid { grid-template-columns: repeat(2,1fr); }
     .header-inner { flex-direction:column; align-items:flex-start; }
     .header-right { text-align:left; width:100%; }
+    .report-kpis { grid-template-columns: repeat(2,1fr); }
   }
   @media (max-width:400px) { .kpi-grid { grid-template-columns:1fr; } }
 
@@ -225,8 +309,8 @@
   <div class="carousel-wrap fullscreen" id="loginCarousel"></div>
   <div class="login-stack">
     <div class="login-box">
-      <h1>🔐 KLE‑CTIE <span>Pulse</span></h1>
-      <p>Incubation Centre WhatsApp Dashboard · Enter access code</p>
+      <h1>🔐 KLE‑CTIE <span>Unified</span></h1>
+      <p>Incubation Centre Dashboard · Enter access code</p>
       <input type="password" id="passwordInput" placeholder="Enter password" autofocus />
       <button onclick="verifyPassword()">Unlock Dashboard</button>
       <div id="loginError" class="login-error">❌ Incorrect password. Try again.</div>
@@ -236,9 +320,9 @@
 
 <!-- LOADING -->
 <div class="loading-screen" id="loadingScreen">
-  <div class="loading-logo">KLE‑CTIE <span>Pulse</span></div>
-  <div class="loading-tag">"KLE‑CTIE Pulse"</div>
-  <div class="loading-bar-track"><div class="loading-bar-fill"></div></div>
+  <div class="loading-rings"><div class="loading-dot"></div></div>
+  <div class="loading-logo">KLE‑CTIE <span>Unified</span></div>
+  <div class="loading-tag">"Build Beyond Boundaries"</div>
   <div class="loading-msg" id="loadingMsg">Connecting to data...</div>
 </div>
 
@@ -256,14 +340,17 @@
     <div class="header-inner">
       <div class="header-left">
         <div class="header-eyebrow">KLE Technological University · CTIE</div>
-        <div class="header-title">KLE‑CTIE <span>Pulse</span></div>
+        <div class="header-title">KLE‑CTIE <span>Unified</span></div>
         <div class="header-sub" id="headerSub">Multi-group WhatsApp synopsis · Live Dashboard</div>
         <div class="gold-bar"></div>
       </div>
       <div class="header-right">
         <div class="header-ts">Last updated<br /><span id="lastUpdated">—</span></div>
         <div class="live-badge"><div class="live-dot"></div><span class="live-text">LIVE</span></div>
-        <button class="logout-btn" onclick="logout()">Log out</button>
+        <div class="header-btn-row">
+          <button class="logout-btn refresh-btn" id="refreshBtn" onclick="refreshDashboard()">⟳ Refresh</button>
+          <button class="logout-btn" onclick="logout()">Log out</button>
+        </div>
       </div>
     </div>
   </div>
@@ -276,8 +363,9 @@
     <!-- OVERVIEW KPI GRID -->
     <div class="kpi-grid" id="overviewKpiGrid"></div>
 
-    <!-- TAB BAR -->
-    <div class="tab-bar-wrap">
+    <!-- TAB BAR (sticky — stays visible while scrolling a group's content) -->
+    <div class="tab-bar-wrap" id="tabBarWrap">
+      <div class="tab-bar-brand"><div class="mark">C</div><span>KLE‑CTIE</span></div>
       <div class="tab-bar" id="tabBar"></div>
       <div class="tab-indicator" id="tabIndicator"></div>
     </div>
@@ -292,8 +380,10 @@
 <!-- STICKY FOOTER — persistent across login/loading/error/dashboard, not just post-login -->
 <div class="sticky-footer">
   <span>Made with <span class="heart">♥</span> ~rhc · EE Lab, KLE‑CTIE</span>
-  <span class="ts">Last updated — <span id="footerTimestamp">—</span></span>
+  <span class="ts" id="footerTsWrap" style="display:none;">Last updated — <span id="footerTimestamp">—</span></span>
 </div>
+
+<div class="toast-wrap" id="toastWrap" aria-live="polite"></div>
 
 <script>
 // ══════════════════════════════════════════════════════
@@ -341,6 +431,21 @@ async function verifyPassword() {
 document.getElementById('passwordInput').addEventListener('keydown', function (e) { if (e.key === 'Enter') verifyPassword(); });
 
 // ══════════════════════════════════════════════════════
+//  TOAST NOTIFICATIONS
+// ══════════════════════════════════════════════════════
+function showToast(title, body, type) {
+  var wrap = document.getElementById('toastWrap');
+  if (!wrap) return;
+  var item = document.createElement('div');
+  item.className = 'toast ' + (type || 'info');
+  item.innerHTML = '<div class="toast-title"></div><div class="toast-body"></div>';
+  item.querySelector('.toast-title').textContent = title;
+  item.querySelector('.toast-body').textContent = body;
+  wrap.appendChild(item);
+  setTimeout(function () { item.remove(); }, 4200);
+}
+
+// ══════════════════════════════════════════════════════
 //  LOGOUT — nothing is persisted (no localStorage/sessionStorage use anywhere in
 //  this app), so this just resets the UI back to the login screen and clears the
 //  typed password out of the input so it isn't left sitting on screen.
@@ -357,8 +462,10 @@ function logout() {
   document.getElementById('passwordInput').value = '';
   document.getElementById('loginError').style.display = 'none';
   document.getElementById('passwordInput').focus();
+  document.getElementById('footerTsWrap').style.display = 'none';
 
   DASHBOARD_DATA = null;
+  showToast('Logged out', 'Portal access was cleared on this device.', 'info');
 }
 
 // ══════════════════════════════════════════════════════
@@ -380,10 +487,33 @@ async function loadDashboard() {
     renderDashboard(data);
     document.getElementById('loadingScreen').classList.add('hidden');
     setTimeout(() => { document.getElementById('loadingScreen').style.display = 'none'; }, 500);
+    showToast('Dashboard loaded', (data.overview.totalMessages || 0) + ' messages across ' + Object.keys(data.groups || {}).length + ' groups.', 'success');
   } catch (err) {
     document.getElementById('loadingScreen').classList.add('hidden');
     document.getElementById('errorScreen').classList.add('show');
     document.getElementById('errorDetail').textContent = err.message;
+  }
+}
+
+// Re-pulls the latest sheet data without the full-screen loading overlay — feedback
+// comes via toast instead, since the dashboard is already usable while this runs.
+async function refreshDashboard() {
+  var btn = document.getElementById('refreshBtn');
+  if (btn) { btn.disabled = true; btn.textContent = '⟳ Refreshing…'; }
+  try {
+    const res = await fetch(GAS_URL, {
+      method: 'POST', mode: 'cors', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ action: 'getData' })
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    DASHBOARD_DATA = data;
+    renderDashboard(data);
+    showToast('Refreshed', 'Latest sheet data is now visible.', 'success');
+  } catch (err) {
+    showToast('Refresh failed', err.message || 'Could not reach the backend.', 'error');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '⟳ Refresh'; }
   }
 }
 
@@ -442,7 +572,7 @@ function switchTab(key) {
   moveIndicator();
   if (!initializedTabs.has(key)) {
     initializedTabs.add(key);
-    if (key !== 'overview') initGroupCharts(key);
+    if (key !== 'overview' && key !== 'report') initGroupCharts(key);
   }
 }
 
@@ -467,6 +597,7 @@ function renderDashboard(data) {
 
   document.getElementById('lastUpdated').textContent = data.lastUpdated;
   document.getElementById('footerTimestamp').textContent = data.lastUpdated;
+  document.getElementById('footerTsWrap').style.display = '';
 
   var groupList = Object.values(data.groups || {});
   document.getElementById('headerSub').textContent =
@@ -476,6 +607,7 @@ function renderDashboard(data) {
   renderTabBar(groupList);
   renderOverviewPanel(data, groupList);
   groupList.forEach(g => renderGroupPanel(g));
+  renderReportPanel(data, groupList);
 
   // Reveal-on-scroll for cards
   document.querySelectorAll('.kpi-card, .chart-card, .data-table-wrap, .glance-card').forEach(el => el.classList.add('reveal'));
@@ -503,9 +635,9 @@ function renderOverviewKpis(data) {
   ];
   var grid = document.getElementById('overviewKpiGrid');
   grid.innerHTML = kpis.map((k, i) =>
-    `<div class="kpi-card" id="ovKpi${i}" onclick="goTo('${k.tab || 'overview'}', ${k.target ? "'" + k.target + "'" : 'null'})">
+    `<div class="kpi-card" id="ovKpi${i}" style="--accent:var(--${k.cls})" onclick="goTo('${k.tab || 'overview'}', ${k.target ? "'" + k.target + "'" : 'null'})">
       <div class="kpi-label">${esc(k.label)}</div>
-      <div class="kpi-value" id="ovKpiVal${i}" style="color:var(--${k.cls === 'gold' ? 'gold' : k.cls})">—</div>
+      <div class="kpi-value" id="ovKpiVal${i}" style="color:var(--${k.cls})">—</div>
       <div class="kpi-sub">${k.value == null ? 'No data yet' : (k.label === 'Open Issues' ? 'Across all groups' : k.label === 'Avg. Response Time' ? 'Time to first reply' : 'This period')}</div>
     </div>`
   ).join('');
@@ -521,6 +653,7 @@ function renderTabBar(groupList) {
       <span class="dot" style="--tab-color:${g.color}"></span>${esc(g.icon)} ${esc(g.name)}
     </button>`;
   });
+  html += `<button class="tab-btn" data-tab="report" onclick="switchTab('report')"><span>📄</span> Report</button>`;
   bar.innerHTML = html;
 }
 
@@ -613,24 +746,37 @@ function initOverviewChart(data, groupList) {
 }
 
 // ---------- PER-GROUP PANEL ----------
-function renderGroupPanel(g) {
-  var kpis = [
-    { label: 'Total Messages', value: g.total, cls: 'blue' }
-  ];
+// Single source of truth for a group's KPI list — used both to build the HTML
+// (renderGroupPanel) and to animate the values in on tab activation (initGroupCharts).
+// Keeping this in one place avoids the two staying in sync by hand and drifting
+// out of index-order with each other.
+function buildGroupKpis(g) {
+  var kpis = [{ label: 'Total Messages', value: g.total, cls: 'blue' }];
   var topCat = Object.entries(g.categories || {}).sort((a, b) => b[1] - a[1])[0];
   if (topCat) kpis.push({ label: 'Top Category', value: topCat[1], sub: topCat[0], cls: 'gold', isTop: true });
+  if (g.recentMessages && g.recentMessages.length) {
+    kpis.push({ label: 'Last Activity', value: fmtDate(g.recentMessages[0].date), sub: g.recentMessages[0].sender, cls: 'green', isTop: true });
+  }
   if (g.attendance && g.attendance.total > 0) kpis.push({ label: 'Attendance Flags', value: g.attendance.total, cls: 'red' });
   if (g.issues && (g.issues.open + g.issues.acknowledged + g.issues.resolved) > 0) {
     kpis.push({ label: 'Open Issues', value: g.issues.open, cls: 'red' });
     if (g.issues.avgResponseHrs != null) kpis.push({ label: 'Avg. Response', value: g.issues.avgResponseHrs, suffix: ' hrs', cls: 'purple' });
   }
+  return kpis;
+}
 
-  var kpiHtml = kpis.map((k, i) => `
-    <div class="kpi-card static">
+function renderGroupPanel(g) {
+  var kpis = buildGroupKpis(g);
+
+  var kpiHtml = kpis.map((k, i) => {
+    var accent = k.cls === 'gold' ? g.color : 'var(--' + k.cls + ')';
+    return `
+    <div class="kpi-card static" style="--accent:${accent}">
       <div class="kpi-label">${esc(k.label)}</div>
-      <div class="kpi-value" id="grp-${g.key}-kpi-${i}" style="color:${k.cls === 'gold' ? g.color : 'var(--' + k.cls + ')'}">—</div>
+      <div class="kpi-value" id="grp-${g.key}-kpi-${i}" style="color:${accent}">—</div>
       <div class="kpi-sub">${k.isTop ? esc(k.sub) : 'This period'}</div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 
   var senderList = (g.topSenders || []);
   var maxSender = senderList.length ? senderList[0][1] : 1;
@@ -643,6 +789,19 @@ function renderGroupPanel(g) {
       <div style="flex:1;max-width:80px;"><div class="sender-bar" data-w="${barWidth}"></div></div>
     </div>`;
   }).join('') + `</div>` : '<p class="empty-note">No messages parsed yet.</p>';
+
+  var recentHtml = '';
+  if (g.recentMessages && g.recentMessages.length) {
+    var recentRows = g.recentMessages.map(m => `
+      <tr><td>${fmtDate(m.date)}</td><td><strong>${esc(m.sender)}</strong></td>
+      <td>${esc(m.category)}</td><td>${esc(m.snippet)}</td></tr>`).join('');
+    recentHtml = `
+      <div class="data-table-wrap" id="recent-${g.key}">
+        <h3>Recent Messages — ${esc(g.name)}</h3>
+        <div class="scroller"><table><thead><tr><th>Date</th><th>Sender</th><th>Category</th><th>Message</th></tr></thead>
+        <tbody>${recentRows}</tbody></table></div>
+      </div>`;
+  }
 
   var issuesHtml = '';
   if (g.issues && g.issues.recent && g.issues.recent.length) {
@@ -691,6 +850,7 @@ function renderGroupPanel(g) {
       <div class="chart-holder"><canvas id="trend-${g.key}"></canvas></div>
     </div>
 
+    ${recentHtml}
     ${issuesHtml}
     ${attHtml}
   `;
@@ -706,14 +866,7 @@ function initGroupCharts(key) {
     setTimeout(() => { el.style.width = el.dataset.w + '%'; }, 50);
   });
 
-  var kpis = [{ value: g.total }];
-  var topCat = Object.entries(g.categories || {}).sort((a, b) => b[1] - a[1])[0];
-  if (topCat) kpis.push({ value: topCat[1] });
-  if (g.attendance && g.attendance.total > 0) kpis.push({ value: g.attendance.total });
-  if (g.issues && (g.issues.open + g.issues.acknowledged + g.issues.resolved) > 0) {
-    kpis.push({ value: g.issues.open });
-    if (g.issues.avgResponseHrs != null) kpis.push({ value: g.issues.avgResponseHrs, suffix: ' hrs' });
-  }
+  var kpis = buildGroupKpis(g);
   kpis.forEach((k, i) => {
     var el = document.getElementById(`grp-${key}-kpi-${i}`);
     if (el) animateCount(el, k.value, { suffix: k.suffix || '' });
@@ -751,6 +904,95 @@ function palette(n) {
   return out;
 }
 
+// ---------- PRINTABLE REPORT ----------
+function reportKpi(label, value) {
+  return `<div class="report-kpi"><div class="report-kpi-label">${esc(label)}</div><div class="report-kpi-value">${esc(value == null ? '—' : value)}</div></div>`;
+}
+
+function renderReportPanel(data, groupList) {
+  var o = data.overview;
+
+  var summaryRows = groupList.map(g => {
+    var topCat = Object.entries(g.categories || {}).sort((a, b) => b[1] - a[1])[0];
+    return `<tr>
+      <td>${esc(g.icon)} ${esc(g.name)}</td>
+      <td>${g.total}</td>
+      <td>${topCat ? esc(topCat[0]) + ' (' + topCat[1] + ')' : '—'}</td>
+      <td>${g.issues.open}</td>
+      <td>${g.attendance.total || '—'}</td>
+    </tr>`;
+  }).join('');
+
+  var groupSections = groupList.map(g => {
+    var catRows = Object.entries(g.categories || {}).sort((a, b) => b[1] - a[1])
+      .map(([c, n]) => `<tr><td>${esc(c)}</td><td>${n}</td><td>${g.total ? Math.round(n / g.total * 100) + '%' : '0%'}</td></tr>`).join('');
+    var senderRows = (g.topSenders || []).map(s => `<tr><td>${esc(s[0])}</td><td>${s[1]}</td></tr>`).join('');
+    var issueRows = (g.issues.recent || []).map(i =>
+      `<tr><td>${fmtDate(i.date)}</td><td>${esc(i.sender)}</td><td>${esc(i.status)}</td><td>${i.responseHrs != null ? i.responseHrs + ' hrs' : '—'}</td></tr>`).join('');
+    var attRows = (g.attendance.recent || []).map(a =>
+      `<tr><td>${fmtDate(a.date)}</td><td>${esc(a.sender)}</td><td>${esc(a.status)}</td></tr>`).join('');
+    var noteBits = [g.total + ' messages parsed'];
+    if (g.issues.responseCount) noteBits.push('avg. response ' + g.issues.avgResponseHrs + ' hrs across ' + g.issues.responseCount + ' tracked issue(s)');
+
+    return `
+      <section class="report-section">
+        <div class="report-section-title">${esc(g.icon)} ${esc(g.name)}</div>
+        <p class="report-note">${esc(noteBits.join(' · '))}.</p>
+        <table class="report-table">
+          <thead><tr><th>Category</th><th>Count</th><th>Share</th></tr></thead>
+          <tbody>${catRows || '<tr><td colspan="3">No data</td></tr>'}</tbody>
+        </table>
+        <table class="report-table">
+          <thead><tr><th>Top Contributor</th><th>Messages</th></tr></thead>
+          <tbody>${senderRows || '<tr><td colspan="2">No data</td></tr>'}</tbody>
+        </table>
+        ${issueRows ? `<table class="report-table"><thead><tr><th>Date</th><th>Sender</th><th>Status</th><th>Response</th></tr></thead><tbody>${issueRows}</tbody></table>` : ''}
+        ${attRows ? `<table class="report-table"><thead><tr><th>Date</th><th>Sender</th><th>Status</th></tr></thead><tbody>${attRows}</tbody></table>` : ''}
+      </section>`;
+  }).join('');
+
+  var panel = document.createElement('div');
+  panel.className = 'tab-panel';
+  panel.dataset.tab = 'report';
+  panel.innerHTML = `
+    <div class="sec-label"><span class="sec-num">R</span><div class="sec-line"></div></div>
+    <div class="sec-title">Executive <em>Report</em></div>
+    <div class="sec-sub">A print-ready synopsis across all groups — click Download to save as PDF.</div>
+    <button class="primary-btn" onclick="downloadReport()" style="margin-bottom:1.4rem;">⬇ Download PDF</button>
+
+    <div class="pdf-report" id="pdfReport">
+      <div class="pdf-cover">
+        <div class="pdf-cover-inner">
+          <div class="report-cover-title">KLE‑CTIE <em>Unified Synopsis</em></div>
+          <div class="report-cover-sub">Cross-group WhatsApp activity synopsis — IEC Core Team, IIC 8.0, and KLE CTIE Incubatees — generated automatically from live Google Sheets data.</div>
+          <div class="report-meta">Generated ${esc(data.lastUpdated)}</div>
+        </div>
+      </div>
+      <div class="report-kpis">
+        ${reportKpi('Total Messages', o.totalMessages)}
+        ${reportKpi('Active Groups', o.activeGroups)}
+        ${reportKpi('Open Issues', o.openIssues)}
+        ${reportKpi('Avg. Response', o.avgResponseHrs != null ? o.avgResponseHrs + ' hrs' : '—')}
+      </div>
+      <section class="report-section">
+        <div class="report-section-title">Groups at a Glance</div>
+        <table class="report-table">
+          <thead><tr><th>Group</th><th>Messages</th><th>Top Category</th><th>Open Issues</th><th>Attendance Flags</th></tr></thead>
+          <tbody>${summaryRows || '<tr><td colspan="5">No groups configured</td></tr>'}</tbody>
+        </table>
+      </section>
+      ${groupSections}
+    </div>
+  `;
+  document.getElementById('tabPanels').appendChild(panel);
+}
+
+function downloadReport() {
+  switchTab('report');
+  showToast('Preparing report', 'Opening the print dialog — choose "Save as PDF" as the destination.', 'info');
+  setTimeout(() => window.print(), 250);
+}
+
 // ══════════════════════════════════════════════════════
 //  CAROUSEL — 3 self-contained, brand-colored illustrations (no external image
 //  files, so nothing to break/host). Same markup renders into both the login
@@ -780,8 +1022,11 @@ const CAROUSEL_SLIDES = [
       <circle cx="212" cy="110" r="5" fill="#e8c97a" stroke="none"/>
     </g>
     <text x="600" y="295" text-anchor="middle" font-family="'Cormorant Garamond',serif" font-size="38" font-style="italic" fill="#ffffff">Innovation</text>
-    <text x="600" y="325" text-anchor="middle" font-family="'Outfit',sans-serif" font-size="14" fill="rgba(255,255,255,0.6)">Ideas surfaced from every conversation, automatically</text>
-    <rect x="577" y="344" width="46" height="3" rx="1.5" fill="#c9a84c"/>
+    <text x="600" y="322" text-anchor="middle" font-family="'Outfit',sans-serif" font-size="13" fill="rgba(255,255,255,0.6)">
+      <tspan x="600" dy="0">Ideas surfaced automatically</tspan>
+      <tspan x="600" dy="18">from every conversation</tspan>
+    </text>
+    <rect x="577" y="360" width="46" height="3" rx="1.5" fill="#c9a84c"/>
   </svg>`,
   // 2. Incubation & Growth
   `<svg viewBox="0 0 1200 400" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
@@ -806,8 +1051,11 @@ const CAROUSEL_SLIDES = [
       <path d="M120 65 L166 22 L157 48 L188 40 L142 92 L133 66 Z" fill="#e8c97a"/>
     </g>
     <text x="600" y="295" text-anchor="middle" font-family="'Cormorant Garamond',serif" font-size="38" font-style="italic" fill="#ffffff">Incubation</text>
-    <text x="600" y="325" text-anchor="middle" font-family="'Outfit',sans-serif" font-size="14" fill="rgba(255,255,255,0.6)">From first pitch to scale-up, tracked in one place</text>
-    <rect x="577" y="344" width="46" height="3" rx="1.5" fill="#c9a84c"/>
+    <text x="600" y="322" text-anchor="middle" font-family="'Outfit',sans-serif" font-size="13" fill="rgba(255,255,255,0.6)">
+      <tspan x="600" dy="0">From first pitch</tspan>
+      <tspan x="600" dy="18">to scale-up, tracked here</tspan>
+    </text>
+    <rect x="577" y="360" width="46" height="3" rx="1.5" fill="#c9a84c"/>
   </svg>`,
   // 3. Community & Collaboration
   `<svg viewBox="0 0 1200 400" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
@@ -831,8 +1079,11 @@ const CAROUSEL_SLIDES = [
     <g fill="#e8c97a"><circle cx="545" cy="90" r="7"/><circle cx="645" cy="55" r="7"/><circle cx="755" cy="105" r="7"/>
       <circle cx="595" cy="185" r="9"/><circle cx="735" cy="210" r="7"/><circle cx="460" cy="155" r="7"/></g>
     <text x="600" y="295" text-anchor="middle" font-family="'Cormorant Garamond',serif" font-size="38" font-style="italic" fill="#ffffff">Community</text>
-    <text x="600" y="325" text-anchor="middle" font-family="'Outfit',sans-serif" font-size="14" fill="rgba(255,255,255,0.6)">Three WhatsApp groups, one connected campus</text>
-    <rect x="577" y="344" width="46" height="3" rx="1.5" fill="#c9a84c"/>
+    <text x="600" y="322" text-anchor="middle" font-family="'Outfit',sans-serif" font-size="13" fill="rgba(255,255,255,0.6)">
+      <tspan x="600" dy="0">Three WhatsApp groups,</tspan>
+      <tspan x="600" dy="18">one connected campus</tspan>
+    </text>
+    <rect x="577" y="360" width="46" height="3" rx="1.5" fill="#c9a84c"/>
   </svg>`
 ];
 
@@ -876,6 +1127,10 @@ window.addEventListener('DOMContentLoaded', function () {
   document.getElementById('passwordInput').focus();
   renderCarousel('loginCarousel');
   renderCarousel('dashboardCarousel');
+  window.addEventListener('scroll', function () {
+    var wrap = document.getElementById('tabBarWrap');
+    if (wrap) wrap.classList.toggle('scrolled', window.scrollY > 4);
+  });
 });
 </script>
 </body>
