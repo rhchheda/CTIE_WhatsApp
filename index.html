@@ -176,7 +176,12 @@
   .tab-bar-brand .mark { width: 26px; height: 26px; border-radius: 7px; background: var(--navy); color: var(--gold);
     display: flex; align-items: center; justify-content: center; font-family: 'Cormorant Garamond', serif; font-size: 15px; font-weight: 600; }
   .tab-bar-brand span { font-size: 12.5px; font-weight: 600; color: var(--navy); white-space: nowrap; }
-  .tab-bar { display: flex; gap: 4px; min-width: max-content; position: relative; }
+  /* Dedicated positioning context for the tab bar + its indicator, kept separate from
+     .tab-bar-wrap's own position:sticky — sticky is not reliably a containing block for
+     absolutely-positioned descendants across browsers, which was throwing the indicator
+     off by the brand chip's width. */
+  .tab-bar-inner { position: relative; }
+  .tab-bar { display: flex; gap: 4px; min-width: max-content; }
   .tab-btn { display:flex; align-items:center; gap:7px; padding:12px 18px; background:none; border:none;
     font-family:'Outfit', sans-serif; font-size:13.5px; font-weight:500; color: var(--muted); cursor:pointer; white-space:nowrap; transition: color 0.2s; }
   .tab-btn .dot { width:8px; height:8px; border-radius:50%; background: var(--tab-color, var(--gold)); }
@@ -366,8 +371,10 @@
     <!-- TAB BAR (sticky — stays visible while scrolling a group's content) -->
     <div class="tab-bar-wrap" id="tabBarWrap">
       <div class="tab-bar-brand"><div class="mark">C</div><span>KLE‑CTIE</span></div>
-      <div class="tab-bar" id="tabBar"></div>
-      <div class="tab-indicator" id="tabIndicator"></div>
+      <div class="tab-bar-inner">
+        <div class="tab-bar" id="tabBar"></div>
+        <div class="tab-indicator" id="tabIndicator"></div>
+      </div>
     </div>
 
     <!-- TAB PANELS -->
@@ -379,7 +386,7 @@
 
 <!-- STICKY FOOTER — persistent across login/loading/error/dashboard, not just post-login -->
 <div class="sticky-footer">
-  <span>Made with <span class="heart">❤</span> ~rhc · EE Lab · KLE‑CTIE.</span>
+  <span>Made with <span class="heart">❤</span> ~rhc · EE Lab· KLE‑CTIE.</span>
   <span class="ts" id="footerTsWrap" style="display:none;">Last updated — <span id="footerTimestamp">—</span></span>
 </div>
 
